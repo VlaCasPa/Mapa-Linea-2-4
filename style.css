@@ -6,7 +6,7 @@ body, html {
     background-color: #f3f4f6;
 }
 
-/* Usamos 100dvh (Dynamic Viewport Height) para que funcione perfecto en celulares */
+/* 100dvh asegura que se vea perfecto en la pantalla de los celulares */
 #map {
     height: 100dvh;
     width: 100%;
@@ -52,13 +52,22 @@ body, html {
     display: block;
 }
 
-/* Colores de Alerta */
+/* --- Colores de Alerta --- */
 .estado-optimo { background-color: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }
 .estado-alerta { background-color: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; }
-.estado-vencido { background-color: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444; }
 .estado-exonerado { background-color: #eef2ff; color: #3730a3; border-left: 4px solid #6366f1; }
+.estado-indefinido { background-color: #f0fdfa; color: #0f766e; border-left: 4px solid #14b8a6; }
 
-/* --- NUEVO: Diseño del ID siempre visible --- */
+/* Alerta Especial Vencido (Borde completo y texto agresivo) */
+.estado-vencido { 
+    background-color: #fef2f2; 
+    color: #991b1b; 
+    border: 1px solid #dc2626;
+    border-left: 5px solid #dc2626; 
+    font-weight: 700; 
+}
+
+/* --- Diseño del ID siempre visible --- */
 .id-tooltip {
     background-color: transparent !important;
     border: none !important;
