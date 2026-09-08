@@ -1,4 +1,4 @@
-// 1. Inicializar el Mapa (Sin coordenadas fijas, se centrará automáticamente)
+// 1. Inicializar el Mapa
 const map = L.map('map');
 
 // 2. Mapa Base Minimalista
@@ -13,23 +13,25 @@ const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYN
 
 // 4. Lógica de Colores y Días
 function obtenerClaseEstado(dias) {
-    if (!dias) return 'estado-alerta'; 
+    if (!dias && dias !== 0) return 'estado-critico'; 
     let d = dias.toString().trim().toLowerCase();
     
     if (d === "exonerado") return 'estado-exonerado';
     if (d === "indefinido") return 'estado-indefinido';
+    if (d === "en trámite") return 'estado-tramite';
     
     let numDias = parseInt(dias);
-    if (numDias > 30) return 'estado-optimo';
-    if (numDias >= 0 && numDias <= 30) return 'estado-alerta';
-    if (numDias < 0) return 'estado-vencido';
-    return 'estado-alerta';
+    if (numDias >= 29) return 'estado-optimo';
+    if (numDias >= 0 && numDias < 29) return 'estado-critico'; // Menos de 29 días
+    if (numDias < 0) return 'estado-vencido'; // Vencido
+    return 'estado-critico';
 }
 
 function formatearDias(dias) {
     let d = dias.toString().trim().toLowerCase();
     if (d === "exonerado") return "Amparo Ley N° 31955";
     if (d === "indefinido") return "Plazo Indefinido";
+    if (d === "en trámite") return "Renovación en Trámite";
     
     let num = parseInt(dias);
     if (num < 0) return `¡VENCIDO HACE ${Math.abs(num)} DÍAS!`;
@@ -42,8 +44,6 @@ Papa.parse(urlCSV, {
     header: true,
     complete: function(results) {
         let data = results.data;
-        
-        // Grupo para centrar la cámara en los marcadores
         let grupoMarcadores = L.featureGroup().addTo(map);
         
         data.forEach(item => {
@@ -51,6 +51,10 @@ Papa.parse(urlCSV, {
                 
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+
+                // Evaluar si hay comentarios para inyectarlos en el HTML
+                let comObra = item.Aut_Obra_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Obra_Comentarios}</div>` : '';
+                let comDesvio = item.Aut_Desvio_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Desvio_Comentarios}</div>` : '';
 
                 let popupContent = `
                     <div class="popup-container">
@@ -61,32 +65,40 @@ Papa.parse(urlCSV, {
                             <span class="auth-title">🚧 Autorización de Obra</span>
                             Resolución: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
                             Estado: <b>${formatearDias(item.Aut_Obra_Dias_Restantes)}</b>
+                            ${comObra}
                         </div>
 
                         <div class="auth-box ${claseDesvio}">
                             <span class="auth-title">🚦 Desvío de Tránsito</span>
                             Resolución: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
                             Estado: <b>${formatearDias(item.Aut_Desvio_Dias_Restantes)}</b>
+                            ${comDesvio}
                         </div>
                     </div>
                 `;
 
-                // Corrección automática de comas a puntos
+                // Corrección automática de coordenadas
                 let latText = item.Latitud.toString().trim().replace(/,/g, '.');
                 let lonText = item.Longitud.toString().trim().replace(/,/g, '.');
-
                 let latitudCorregida = parseFloat(latText);
                 let longitudCorregida = parseFloat(lonText);
 
                 if (!isNaN(latitudCorregida) && !isNaN(longitudCorregida)) {
                     
-                    let markerColor = "#2563EB"; // Azul (Estaciones)
-                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Gris (Pozos)
+                    // --- SISTEMA GERENCIAL DE PRIORIDAD DE COLORES EN EL MAPA ---
+                    let markerColor = "#2563EB"; // Base: Azul (Estaciones)
+                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Base: Gris (Pozos)
                     
-                    // ALERTA VISUAL: Si algo está vencido, el marcador se vuelve ROJO
-                    if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') {
+                    // Prioridad 1: Si hay gestión en trámite, pintar Morado
+                    if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
+                        markerColor = "#A855F7"; 
+                    }
+                    
+                    // Prioridad Máxima: Si algo vence en < 29 días o ya venció, pintar ROJO absoluto
+                    if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                         markerColor = "#DC2626"; 
                     }
+                    // -----------------------------------------------------------
                     
                     let marker = L.circleMarker([latitudCorregida, longitudCorregida], {
                         radius: 8,
@@ -97,23 +109,16 @@ Papa.parse(urlCSV, {
                         fillOpacity: 0.8
                     });
 
-                    // Ventana emergente
                     marker.bindPopup(popupContent);
-                    
-                    // Etiqueta del ID siempre visible
                     marker.bindTooltip(item.ID, {
-                        permanent: true, 
-                        direction: 'right', 
-                        className: 'id-tooltip',
-                        offset: [5, 0]
+                        permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0]
                     });
-
                     marker.addTo(grupoMarcadores);
                 }
             }
         });
 
-        // Centrar el mapa automáticamente en todos los puntos
+        // Centrar mapa
         if (grupoMarcadores.getLayers().length > 0) {
             map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30] });
         }
