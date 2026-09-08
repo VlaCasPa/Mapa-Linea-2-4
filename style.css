@@ -94,3 +94,27 @@ body, html {
     font-size: 12px;
     text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
 }
+
+/* --- Botón Flotante WhatsApp --- */
+.btn-float {
+    position: absolute;
+    bottom: 25px;
+    right: 20px;
+    z-index: 1000; 
+    background-color: #25D366; 
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.btn-float:hover {
+    background-color: #128C7E;
+    transform: scale(1.05);
+}
