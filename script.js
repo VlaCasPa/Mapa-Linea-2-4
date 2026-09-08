@@ -1,19 +1,20 @@
-// 1. Inicializar el Mapa (Centrado en Lima)
+// 1. Inicializar el Mapa (Centrado en Lima/Callao)
 const map = L.map('map').setView([-12.055, -77.050], 12);
 
-// 2. Mapa Base Minimalista (CartoDB Positron)
+// 2. Mapa Base Minimalista
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     subdomains: 'abcd',
     maxZoom: 19
 }).addTo(map);
 
-// 3. Tu enlace de Google Sheets
+// 3. Tu enlace de Google Sheets (El enlace CSV publicado)
+// NOTA: Asegúrate de que este sea el enlace terminado en /pub?output=csv
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// 4. Lógica para determinar el color de alerta
+// 4. Lógica para colores de alerta
 function obtenerClaseEstado(dias) {
-    if (!dias) return 'estado-alerta'; // Por si hay celdas vacías
+    if (!dias) return 'estado-alerta'; 
     if (dias.toString().trim().toLowerCase() === "exonerado") return 'estado-exonerado';
     
     let numDias = parseInt(dias);
@@ -38,14 +39,11 @@ Papa.parse(urlCSV, {
         let data = results.data;
         
         data.forEach(item => {
-            // Validar que existan coordenadas
             if (item.Latitud && item.Longitud) {
                 
-                // Determinar clases CSS
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
 
-                // Crear diseño HTML para el Pop-up
                 let popupContent = `
                     <div class="popup-container">
                         <h3 class="popup-title">${item.ID}: ${item.Nombre}</h3>
@@ -65,11 +63,14 @@ Papa.parse(urlCSV, {
                     </div>
                 `;
 
-                // Crear un marcador circular moderno
-                let markerColor = "#2563EB"; // Azul por defecto
-                if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Gris oscuro para pozos
+                // CORRECCIÓN DE LA COMA:
+                let latitudCorregida = parseFloat(item.Latitud.toString().replace(',', '.'));
+                let longitudCorregida = parseFloat(item.Longitud.toString().replace(',', '.'));
 
-                L.circleMarker([parseFloat(item.Latitud), parseFloat(item.Longitud)], {
+                let markerColor = "#2563EB"; 
+                if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; 
+
+                L.circleMarker([latitudCorregida, longitudCorregida], {
                     radius: 8,
                     fillColor: markerColor,
                     color: "#ffffff",
