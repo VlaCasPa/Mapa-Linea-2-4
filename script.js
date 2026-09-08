@@ -44,6 +44,8 @@ Papa.parse(urlCSV, {
     header: true,
     complete: function(results) {
         let data = results.data;
+        window.datosGlobales = data; // Guardamos los datos para el botón de WhatsApp
+        
         let grupoMarcadores = L.featureGroup().addTo(map);
         
         data.forEach(item => {
@@ -52,7 +54,7 @@ Papa.parse(urlCSV, {
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
 
-                // Evaluar si hay comentarios para inyectarlos en el HTML
+                // Evaluar si hay comentarios
                 let comObra = item.Aut_Obra_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Obra_Comentarios}</div>` : '';
                 let comDesvio = item.Aut_Desvio_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Desvio_Comentarios}</div>` : '';
 
@@ -77,7 +79,7 @@ Papa.parse(urlCSV, {
                     </div>
                 `;
 
-                // Corrección automática de coordenadas
+                // Corrección automática de coordenadas (de coma a punto)
                 let latText = item.Latitud.toString().trim().replace(/,/g, '.');
                 let lonText = item.Longitud.toString().trim().replace(/,/g, '.');
                 let latitudCorregida = parseFloat(latText);
@@ -85,28 +87,21 @@ Papa.parse(urlCSV, {
 
                 if (!isNaN(latitudCorregida) && !isNaN(longitudCorregida)) {
                     
-                    // --- SISTEMA GERENCIAL DE PRIORIDAD DE COLORES EN EL MAPA ---
+                    // --- PRIORIDAD DE COLORES EN EL MAPA ---
                     let markerColor = "#2563EB"; // Base: Azul (Estaciones)
                     if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Base: Gris (Pozos)
                     
-                    // Prioridad 1: Si hay gestión en trámite, pintar Morado
+                    // Prioridad 1: Trámite (Morado)
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
                         markerColor = "#A855F7"; 
                     }
-                    
-                    // Prioridad Máxima: Si algo vence en < 29 días o ya venció, pintar ROJO absoluto
+                    // Prioridad Máxima: Vencido o Crítico (Rojo)
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                         markerColor = "#DC2626"; 
                     }
-                    // -----------------------------------------------------------
                     
                     let marker = L.circleMarker([latitudCorregida, longitudCorregida], {
-                        radius: 8,
-                        fillColor: markerColor,
-                        color: "#ffffff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
+                        radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8
                     });
 
                     marker.bindPopup(popupContent);
@@ -123,4 +118,57 @@ Papa.parse(urlCSV, {
             map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30] });
         }
     }
+});
+
+// --- MOTOR DEL REPORTE WHATSAPP ---
+document.getElementById('btn-whatsapp').addEventListener('click', () => {
+    if (!window.datosGlobales) {
+        alert("Los datos aún se están cargando...");
+        return;
+    }
+
+    let vencidos = [];
+    let criticos = [];
+    let tramite = [];
+
+    window.datosGlobales.forEach(item => {
+        if (item.ID && item.Latitud) {
+            let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+            let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+
+            let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
+            let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
+            let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
+
+            if (esVencido) vencidos.push(item.ID);
+            else if (esCritico && !esVencido) criticos.push(item.ID);
+            else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
+        }
+    });
+
+    let fechaHoy = new Date().toLocaleDateString('es-PE');
+    let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n`;
+
+    if (vencidos.length > 0) {
+        texto += `🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.join(', ')}\n\n`;
+    } else {
+        texto += `🔴 *VENCIDOS:* 0\n\n`;
+    }
+
+    if (criticos.length > 0) {
+        texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
+    }
+
+    if (tramite.length > 0) {
+        texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
+    }
+
+    texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
+
+    navigator.clipboard.writeText(texto).then(() => {
+        alert('✅ ¡Reporte copiado!\nYa puedes pegarlo (Ctrl+V) en tu chat de WhatsApp.');
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+        alert('Hubo un error al copiar el reporte.');
+    });
 });
