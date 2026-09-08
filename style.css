@@ -6,12 +6,13 @@ body, html {
     background-color: #f3f4f6;
 }
 
+/* Usamos 100dvh (Dynamic Viewport Height) para que funcione perfecto en celulares */
 #map {
-    height: 100vh;
+    height: 100dvh;
     width: 100%;
 }
 
-/* Diseño de la Ventana Emergente (Pop-up) */
+/* --- Diseño de la Ventana Emergente (Pop-up) --- */
 .leaflet-popup-content-wrapper {
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -51,8 +52,19 @@ body, html {
     display: block;
 }
 
-/* Colores de Alerta Temprana */
+/* Colores de Alerta */
 .estado-optimo { background-color: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }
 .estado-alerta { background-color: #fffbeb; color: #92400e; border-left: 4px solid #f59e0b; }
 .estado-vencido { background-color: #fef2f2; color: #991b1b; border-left: 4px solid #ef4444; }
 .estado-exonerado { background-color: #eef2ff; color: #3730a3; border-left: 4px solid #6366f1; }
+
+/* --- NUEVO: Diseño del ID siempre visible --- */
+.id-tooltip {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+}
