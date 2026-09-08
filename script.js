@@ -1,4 +1,4 @@
-// 1. Inicializar el Mapa (Ya no le ponemos coordenadas fijas, se centrará solo)
+// 1. Inicializar el Mapa (Sin coordenadas fijas, se centrará automáticamente)
 const map = L.map('map');
 
 // 2. Mapa Base Minimalista
@@ -11,9 +11,13 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 // 3. Tu enlace de Google Sheets
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
+// 4. Lógica de Colores y Días
 function obtenerClaseEstado(dias) {
     if (!dias) return 'estado-alerta'; 
-    if (dias.toString().trim().toLowerCase() === "exonerado") return 'estado-exonerado';
+    let d = dias.toString().trim().toLowerCase();
+    
+    if (d === "exonerado") return 'estado-exonerado';
+    if (d === "indefinido") return 'estado-indefinido';
     
     let numDias = parseInt(dias);
     if (numDias > 30) return 'estado-optimo';
@@ -23,9 +27,12 @@ function obtenerClaseEstado(dias) {
 }
 
 function formatearDias(dias) {
-    if (dias.toString().trim().toLowerCase() === "exonerado") return "Amparo Ley N° 31955";
+    let d = dias.toString().trim().toLowerCase();
+    if (d === "exonerado") return "Amparo Ley N° 31955";
+    if (d === "indefinido") return "Plazo Indefinido";
+    
     let num = parseInt(dias);
-    if (num < 0) return `Vencido hace ${Math.abs(num)} días`;
+    if (num < 0) return `¡VENCIDO HACE ${Math.abs(num)} DÍAS!`;
     return `Quedan ${num} días`;
 }
 
@@ -36,7 +43,7 @@ Papa.parse(urlCSV, {
     complete: function(results) {
         let data = results.data;
         
-        // NUEVO: Creamos un "Grupo" para guardar todos los puntos juntos
+        // Grupo para centrar la cámara en los marcadores
         let grupoMarcadores = L.featureGroup().addTo(map);
         
         data.forEach(item => {
@@ -64,6 +71,7 @@ Papa.parse(urlCSV, {
                     </div>
                 `;
 
+                // Corrección automática de comas a puntos
                 let latText = item.Latitud.toString().trim().replace(/,/g, '.');
                 let lonText = item.Longitud.toString().trim().replace(/,/g, '.');
 
@@ -72,10 +80,14 @@ Papa.parse(urlCSV, {
 
                 if (!isNaN(latitudCorregida) && !isNaN(longitudCorregida)) {
                     
-                    let markerColor = "#2563EB"; 
-                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; 
+                    let markerColor = "#2563EB"; // Azul (Estaciones)
+                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Gris (Pozos)
                     
-                    // Creamos el punto (marcador)
+                    // ALERTA VISUAL: Si algo está vencido, el marcador se vuelve ROJO
+                    if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') {
+                        markerColor = "#DC2626"; 
+                    }
+                    
                     let marker = L.circleMarker([latitudCorregida, longitudCorregida], {
                         radius: 8,
                         fillColor: markerColor,
@@ -85,24 +97,23 @@ Papa.parse(urlCSV, {
                         fillOpacity: 0.8
                     });
 
-                    // Le conectamos la ventana emergente
+                    // Ventana emergente
                     marker.bindPopup(popupContent);
                     
-                    // NUEVO: Le conectamos el ID para que siempre sea visible al costado
+                    // Etiqueta del ID siempre visible
                     marker.bindTooltip(item.ID, {
                         permanent: true, 
                         direction: 'right', 
                         className: 'id-tooltip',
-                        offset: [5, 0] // Separa el texto un poquito del círculo
+                        offset: [5, 0]
                     });
 
-                    // Agregamos el punto al grupo
                     marker.addTo(grupoMarcadores);
                 }
             }
         });
 
-        // NUEVO: Hacer que la cámara muestre TODOS los puntos en pantalla automáticamente
+        // Centrar el mapa automáticamente en todos los puntos
         if (grupoMarcadores.getLayers().length > 0) {
             map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30] });
         }
