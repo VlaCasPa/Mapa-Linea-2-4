@@ -1,5 +1,5 @@
-// 1. Inicializar el Mapa (Centrado en Lima/Callao)
-const map = L.map('map').setView([-12.055, -77.050], 12);
+// 1. Inicializar el Mapa (Ya no le ponemos coordenadas fijas, se centrará solo)
+const map = L.map('map');
 
 // 2. Mapa Base Minimalista
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -8,10 +8,9 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19
 }).addTo(map);
 
-// 3. Tu enlace de Google Sheets (El enlace CSV publicado)
+// 3. Tu enlace de Google Sheets
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// 4. Lógica para colores de alerta
 function obtenerClaseEstado(dias) {
     if (!dias) return 'estado-alerta'; 
     if (dias.toString().trim().toLowerCase() === "exonerado") return 'estado-exonerado';
@@ -37,8 +36,10 @@ Papa.parse(urlCSV, {
     complete: function(results) {
         let data = results.data;
         
+        // NUEVO: Creamos un "Grupo" para guardar todos los puntos juntos
+        let grupoMarcadores = L.featureGroup().addTo(map);
+        
         data.forEach(item => {
-            // Verificamos que las celdas de Latitud y Longitud existan en la fila
             if (item.Latitud && item.Longitud) {
                 
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
@@ -63,34 +64,47 @@ Papa.parse(urlCSV, {
                     </div>
                 `;
 
-                // --- CORRECCIÓN DEFINITIVA DE COORDENADAS ---
-                // Leemos la celda, quitamos espacios invisibles y cambiamos TODAS las comas por puntos
                 let latText = item.Latitud.toString().trim().replace(/,/g, '.');
                 let lonText = item.Longitud.toString().trim().replace(/,/g, '.');
 
                 let latitudCorregida = parseFloat(latText);
                 let longitudCorregida = parseFloat(lonText);
 
-                // Solo dibujamos si las coordenadas son números válidos (no están rotas o vacías)
                 if (!isNaN(latitudCorregida) && !isNaN(longitudCorregida)) {
                     
-                    let markerColor = "#2563EB"; // Azul por defecto
-                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; // Gris oscuro
+                    let markerColor = "#2563EB"; 
+                    if (item.Tipo && item.Tipo.toLowerCase() === "pozo") markerColor = "#475569"; 
                     
-                    // Aseguramos que Leaflet reciba números y no textos
-                    L.circleMarker([latitudCorregida, longitudCorregida], {
+                    // Creamos el punto (marcador)
+                    let marker = L.circleMarker([latitudCorregida, longitudCorregida], {
                         radius: 8,
                         fillColor: markerColor,
                         color: "#ffffff",
                         weight: 2,
                         opacity: 1,
                         fillOpacity: 0.8
-                    }).bindPopup(popupContent).addTo(map);
+                    });
 
-                } else {
-                    console.warn("Fallo al leer coordenadas de: " + item.ID);
+                    // Le conectamos la ventana emergente
+                    marker.bindPopup(popupContent);
+                    
+                    // NUEVO: Le conectamos el ID para que siempre sea visible al costado
+                    marker.bindTooltip(item.ID, {
+                        permanent: true, 
+                        direction: 'right', 
+                        className: 'id-tooltip',
+                        offset: [5, 0] // Separa el texto un poquito del círculo
+                    });
+
+                    // Agregamos el punto al grupo
+                    marker.addTo(grupoMarcadores);
                 }
             }
         });
+
+        // NUEVO: Hacer que la cámara muestre TODOS los puntos en pantalla automáticamente
+        if (grupoMarcadores.getLayers().length > 0) {
+            map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30] });
+        }
     }
 });
