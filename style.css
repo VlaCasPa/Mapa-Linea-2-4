@@ -191,3 +191,9 @@ body, html {
 .btn-pill.active { background-color: #0f172a; color: white; border-color: #0f172a; }
 .btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
+/* Nuevo Estado: Obra Culminada (Ventana Gris) */
+.estado-culminado { 
+    background-color: #f3f4f6; 
+    color: #374151; 
+    border-left: 4px solid #9ca3af; 
+}
