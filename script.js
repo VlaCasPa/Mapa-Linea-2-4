@@ -1,215 +1,201 @@
-// 1. Inicializar el Mapa
-const map = L.map('map').setView([-12.055, -77.050], 12);
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 19
-}).addTo(map);
-
-const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
-
-// Variables globales para el filtro y el reporte
-window.datosGlobales = [];
-let marcadoresGuardados = []; 
-let grupoMarcadores = L.featureGroup().addTo(map);
-let filtroActualID = "Todos";
-let filtroActualEstado = "Todos";
-
-function obtenerClaseEstado(dias) {
-    if (!dias && dias !== 0) return 'estado-critico'; 
-    let d = dias.toString().trim().toLowerCase();
-    if (d === "exonerado") return 'estado-exonerado';
-    if (d === "indefinido") return 'estado-indefinido';
-    if (d === "en trámite") return 'estado-tramite';
-    
-    let numDias = parseInt(dias);
-    if (numDias >= 29) return 'estado-optimo';
-    if (numDias >= 0 && numDias < 29) return 'estado-critico'; 
-    if (numDias < 0) return 'estado-vencido'; 
-    return 'estado-critico';
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
 }
 
-function formatearDias(dias) {
-    let d = dias.toString().trim().toLowerCase();
-    if (d === "exonerado") return "Amparo Ley N° 31955";
-    if (d === "indefinido") return "Plazo Indefinido";
-    if (d === "en trámite") return "Renovación en Trámite";
-    
-    let num = parseInt(dias);
-    if (num < 0) return `¡VENCIDO HACE ${Math.abs(num)} DÍAS!`;
-    return `Quedan ${num} días`;
+#map {
+    height: 100dvh;
+    width: 100%;
 }
 
-// Función para pintar marcadores según filtros
-function aplicarFiltros() {
-    grupoMarcadores.clearLayers(); 
-    let boundsCount = 0;
-
-    marcadoresGuardados.forEach(obj => {
-        let mostrarPorID = (filtroActualID === "Todos" || obj.datos.ID === filtroActualID);
-        let mostrarPorEstado = true;
-
-        if (filtroActualEstado === "Criticos") {
-            mostrarPorEstado = (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico');
-        } else if (filtroActualEstado === "Tramite") {
-            mostrarPorEstado = (obj.estadoSeveridad === 'tramite');
-        }
-
-        if (mostrarPorID && mostrarPorEstado) {
-            obj.marcador.addTo(grupoMarcadores);
-            boundsCount++;
-        }
-    });
-
-    if (boundsCount > 0) {
-        map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
-    }
+/* --- Diseño de la Ventana Emergente --- */
+.leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 5px;
 }
 
-Papa.parse(urlCSV, {
-    download: true, header: true,
-    complete: function(results) {
-        window.datosGlobales = results.data; 
-        let contenedorIDs = document.getElementById('contenedor-filtros-id');
-        
-        window.datosGlobales.forEach(item => {
-            if (item.Latitud && item.Longitud && item.ID) {
-                if (!document.querySelector(`button[data-id="${item.ID}"]`)) {
-                    let btn = document.createElement('button');
-                    btn.className = 'btn-pill';
-                    btn.setAttribute('data-id', item.ID);
-                    btn.innerText = item.ID;
-                    if(contenedorIDs) contenedorIDs.appendChild(btn);
-                }
+.popup-container {
+    min-width: 260px;
+}
 
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
-                let comObra = item.Aut_Obra_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Obra_Comentarios}</div>` : '';
-                let comDesvio = item.Aut_Desvio_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Desvio_Comentarios}</div>` : '';
+.popup-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px 0;
+}
 
-                let popupContent = `
-                    <div class="popup-container">
-                        <h3 class="popup-title">${item.ID}: ${item.Nombre}</h3>
-                        <div class="popup-subtitle">📍 ${item.Municipalidad} | ${item.Linea} - ${item.Tipo}</div>
-                        <div class="auth-box ${claseObra}">
-                            <span class="auth-title">🚧 Autorización de Obra</span>
-                            Resolución: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
-                            Estado: <b>${formatearDias(item.Aut_Obra_Dias_Restantes)}</b> ${comObra}
-                        </div>
-                        <div class="auth-box ${claseDesvio}">
-                            <span class="auth-title">🚦 Desvío de Tránsito</span>
-                            Resolución: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
-                            Estado: <b>${formatearDias(item.Aut_Desvio_Dias_Restantes)}</b> ${comDesvio}
-                        </div>
-                    </div>
-                `;
+.popup-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
 
-                let lat = parseFloat(item.Latitud.toString().trim().replace(/,/g, '.'));
-                let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
+.auth-box {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+}
 
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
-                    let severidad = 'normal';
+.auth-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: block;
+}
 
-                    if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
-                        markerColor = "#A855F7"; severidad = 'tramite';
-                    }
-                    if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
-                        markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
-                    }
-                    
-                    let marker = L.circleMarker([lat, lon], {
-                        radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8
-                    });
+/* --- Colores de Estados Legales --- */
+.estado-optimo { background-color: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }
+.estado-exonerado { background-color: #eef2ff; color: #3730a3; border-left: 4px solid #6366f1; }
+.estado-indefinido { background-color: #f0fdfa; color: #0f766e; border-left: 4px solid #14b8a6; }
+.estado-tramite { background-color: #f3e8ff; color: #6b21a8; border-left: 4px solid #a855f7; }
 
-                    marker.bindPopup(popupContent);
-                    marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
-                    
-                    marcadoresGuardados.push({ marcador: marker, datos: item, estadoSeveridad: severidad });
-                }
-            }
-        });
+/* NUEVO: Estado Culminado (Gris) */
+.estado-culminado { 
+    background-color: #f3f4f6; 
+    color: #374151; 
+    border-left: 4px solid #9ca3af; 
+}
 
-        document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                filtroActualID = e.target.getAttribute('data-id');
-                aplicarFiltros();
-            });
-        });
+/* Alerta: Por vencer (Menos de 29 días) */
+.estado-critico { 
+    background-color: #fef2f2; 
+    color: #b91c1c; 
+    border-left: 4px solid #ef4444; 
+}
 
-        document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                filtroActualEstado = e.target.getAttribute('data-estado');
-                aplicarFiltros();
-            });
-        });
+/* Alerta: Vencido (Borde completo agresivo) */
+.estado-vencido { 
+    background-color: #fef2f2; 
+    color: #991b1b; 
+    border: 1px solid #dc2626;
+    border-left: 5px solid #dc2626; 
+    font-weight: 700; 
+}
 
-        aplicarFiltros(); 
-    }
-});
+/* --- Estilo de Comentarios Adicionales --- */
+.popup-comment {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #d1d5db;
+    line-height: 1.3;
+}
 
-// --- MOTOR BLINDADO DEL REPORTE WHATSAPP ---
-// Esperamos a que la página esté totalmente lista para enganchar el botón
-document.addEventListener('DOMContentLoaded', () => {
-    let btnWhatsapp = document.getElementById('btn-whatsapp');
-    
-    if (btnWhatsapp) {
-        btnWhatsapp.addEventListener('click', () => {
-            if (!window.datosGlobales || window.datosGlobales.length === 0) {
-                alert("Los datos aún se están cargando...");
-                return;
-            }
+/* --- Diseño del ID siempre visible --- */
+.id-tooltip {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+}
 
-            let vencidos = [];
-            let criticos = [];
-            let tramite = [];
+/* --- Botón Flotante WhatsApp --- */
+.btn-float {
+    position: absolute;
+    bottom: 25px;
+    right: 20px;
+    z-index: 1000; 
+    background-color: #25D366; 
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+}
 
-            window.datosGlobales.forEach(item => {
-                if (item.ID && item.Latitud) {
-                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+.btn-float:hover {
+    background-color: #128C7E;
+    transform: scale(1.05);
+}
 
-                    let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
-                    let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
-                    let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
+/* --- Título Responsivo --- */
+#titulo-flotante {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-size: clamp(16px, 4vw, 22px);
+    font-weight: 700;
+    color: #111827;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    white-space: nowrap;
+    border-left: 5px solid #2563EB;
+}
 
-                    if (esVencido) vencidos.push(item.ID);
-                    else if (esCritico && !esVencido) criticos.push(item.ID);
-                    else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
-                }
-            });
+/* --- Panel de Filtros --- */
+#panel-filtros {
+    position: absolute;
+    top: 70px;
+    left: 15px;
+    z-index: 1000;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    max-width: 90%;
+    width: 350px;
+}
 
-            let fechaHoy = new Date().toLocaleDateString('es-PE');
-            let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n`;
+.filtro-seccion {
+    margin-bottom: 12px;
+}
 
-            if (vencidos.length > 0) texto += `🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.join(', ')}\n\n`;
-            else texto += `🔴 *VENCIDOS:* 0\n\n`;
+.filtro-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #4b5563;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 
-            if (criticos.length > 0) texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
-            if (tramite.length > 0) texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
+.filtro-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+}
 
-            texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
+/* Botones Píldora */
+.btn-pill {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
 
-            // Construir el enlace directo a la API de WhatsApp
-            let urlWhatsapp = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(texto);
-
-            // Intentar copiar al portapapeles de forma tradicional (Infalible)
-            try {
-                let textArea = document.createElement("textarea");
-                textArea.value = texto;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-            } catch (err) {
-                console.error("No se pudo copiar automáticamente al portapapeles");
-            }
-            
-            // Y finalmente, abrimos WhatsApp de forma directa
-            window.open(urlWhatsapp, '_blank');
-        });
-    }
-});
+.btn-pill:hover { background-color: #f3f4f6; }
+.btn-pill.active { background-color: #0f172a; color: white; border-color: #0f172a; }
+.btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
+.btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
