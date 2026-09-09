@@ -199,3 +199,4 @@ body, html {
 .btn-pill.active { background-color: #0f172a; color: white; border-color: #0f172a; }
 .btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
+.btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
