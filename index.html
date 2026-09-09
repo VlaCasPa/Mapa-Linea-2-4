@@ -18,7 +18,6 @@
             <span class="filtro-label">FILTRAR POR ESTRUCTURA</span>
             <div class="filtro-scroll" id="contenedor-filtros-id">
                 <button class="btn-pill active" data-id="Todos">Todos</button>
-                <!-- Los demás IDs se generarán solos con JS -->
             </div>
         </div>
         
@@ -26,8 +25,10 @@
             <span class="filtro-label">LEYENDA Y ESTADO</span>
             <div class="filtro-scroll">
                 <button class="btn-pill active" data-estado="Todos">Mostrar Todos</button>
-                <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Solo Críticas/Vencidas</button>
+                <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Críticas/Vencidas</button>
                 <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
+                <!-- NUEVO BOTÓN PARA OBRAS CULMINADAS -->
+                <button class="btn-pill btn-culminado" data-estado="Culminado">🟢 Culminadas</button>
             </div>
         </div>
     </div>
