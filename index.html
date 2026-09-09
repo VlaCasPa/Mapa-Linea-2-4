@@ -4,20 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Autorizaciones - Línea 2 Metro</title>
-    <!-- Importamos Leaflet (El Mapa) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Importamos nuestro diseño -->
     <link rel="stylesheet" href="style.css">
-    <!-- Fuente moderna de Google -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Título Flotante Responsivo -->
+    <div id="titulo-flotante">Permisos de Obra - Línea 2 y Ramal L4</div>
+
+    <!-- Panel de Filtros y Leyenda -->
+    <div id="panel-filtros">
+        <div class="filtro-seccion">
+            <span class="filtro-label">FILTRAR POR ESTRUCTURA</span>
+            <div class="filtro-scroll" id="contenedor-filtros-id">
+                <button class="btn-pill active" data-id="Todos">Todos</button>
+                <!-- Los demás IDs se generarán solos con JS -->
+            </div>
+        </div>
+        
+        <div class="filtro-seccion">
+            <span class="filtro-label">LEYENDA Y ESTADO</span>
+            <div class="filtro-scroll">
+                <button class="btn-pill active" data-estado="Todos">Mostrar Todos</button>
+                <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Solo Críticas/Vencidas</button>
+                <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
+            </div>
+        </div>
+    </div>
+
     <div id="map"></div>
     
-    <!-- Botón Flotante para WhatsApp -->
     <button id="btn-whatsapp" class="btn-float" title="Copiar reporte resumen">📋 Reporte WhatsApp</button>
 
-    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="script.js"></script>
