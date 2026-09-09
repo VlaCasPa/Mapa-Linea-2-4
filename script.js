@@ -56,7 +56,6 @@ function aplicarFiltros() {
         } else if (filtroActualEstado === "Culminado") {
             mostrarPorEstado = (obj.estadoSeveridad === 'culminado');
         } else if (filtroActualEstado === "Ley31955") {
-            // Mostrar solo si está amparado por la ley
             mostrarPorEstado = obj.esLey31955; 
         }
 
@@ -96,8 +95,19 @@ Papa.parse(urlCSV, {
 
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
-                let comObra = item.Aut_Obra_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Obra_Comentarios}</div>` : '';
-                let comDesvio = item.Aut_Desvio_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Desvio_Comentarios}</div>` : '';
+                
+                // SISTEMA DESPLEGABLE PARA COMENTARIOS LARGOS
+                let comObra = item.Aut_Obra_Comentarios ? `
+                    <details class="popup-details">
+                        <summary class="popup-summary">💬 Ver comentarios de obra...</summary>
+                        <div class="popup-comment-text">${item.Aut_Obra_Comentarios}</div>
+                    </details>` : '';
+                    
+                let comDesvio = item.Aut_Desvio_Comentarios ? `
+                    <details class="popup-details">
+                        <summary class="popup-summary">💬 Ver comentarios de desvío...</summary>
+                        <div class="popup-comment-text">${item.Aut_Desvio_Comentarios}</div>
+                    </details>` : '';
 
                 let popupContent = `
                     <div class="popup-container">
@@ -106,12 +116,14 @@ Papa.parse(urlCSV, {
                         <div class="auth-box ${claseObra}">
                             <span class="auth-title">🚧 Autorización de Obra</span>
                             Resolución: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
-                            Estado: <b>${formatearDias(item.Aut_Obra_Dias_Restantes)}</b> ${comObra}
+                            Estado: <b>${formatearDias(item.Aut_Obra_Dias_Restantes)}</b>
+                            ${comObra}
                         </div>
                         <div class="auth-box ${claseDesvio}">
                             <span class="auth-title">🚦 Desvío de Tránsito</span>
                             Resolución: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
-                            Estado: <b>${formatearDias(item.Aut_Desvio_Dias_Restantes)}</b> ${comDesvio}
+                            Estado: <b>${formatearDias(item.Aut_Desvio_Dias_Restantes)}</b>
+                            ${comDesvio}
                         </div>
                     </div>
                 `;
@@ -122,7 +134,7 @@ Papa.parse(urlCSV, {
                 if (!isNaN(lat) && !isNaN(lon)) {
                     let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                     let severidad = 'normal';
-                    let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); // ¿Aplica ley?
+                    let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
 
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
                         markerColor = "#10B981"; severidad = 'culminado';
@@ -141,13 +153,12 @@ Papa.parse(urlCSV, {
                     marker.bindPopup(popupContent);
                     marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
                     
-                    // Almacenamos el marcador con su color original guardado
                     marcadoresGuardados.push({ 
                         marcador: marker, 
                         datos: item, 
                         estadoSeveridad: severidad,
-                        colorOriginal: markerColor, // GUARDAMOS SU COLOR REAL
-                        esLey31955: aplicaLey // IDENTIFICAMOS SI USA LA LEY
+                        colorOriginal: markerColor, 
+                        esLey31955: aplicaLey 
                     });
                 }
             }
