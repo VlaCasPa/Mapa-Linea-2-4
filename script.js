@@ -1,4 +1,3 @@
-// 1. Inicializar el Mapa
 const map = L.map('map').setView([-12.055, -77.050], 12);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -7,7 +6,6 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// Variables globales para el filtro y el reporte
 window.datosGlobales = [];
 let marcadoresGuardados = []; 
 let grupoMarcadores = L.featureGroup().addTo(map);
@@ -21,7 +19,7 @@ function obtenerClaseEstado(dias) {
     if (d === "exonerado") return 'estado-exonerado';
     if (d === "indefinido") return 'estado-indefinido';
     if (d === "en trámite") return 'estado-tramite';
-    if (d === "culminado") return 'estado-culminado'; // NUEVO ESTADO
+    if (d === "culminado") return 'estado-culminado'; 
     
     let numDias = parseInt(dias);
     if (numDias >= 29) return 'estado-optimo';
@@ -35,14 +33,14 @@ function formatearDias(dias) {
     if (d === "exonerado") return "Amparo Ley N° 31955";
     if (d === "indefinido") return "Plazo Indefinido";
     if (d === "en trámite") return "Renovación en Trámite";
-    if (d === "culminado") return "Obra Finalizada"; // NUEVO ESTADO
+    if (d === "culminado") return "Obra Finalizada"; 
     
     let num = parseInt(dias);
     if (num < 0) return `¡VENCIDO HACE ${Math.abs(num)} DÍAS!`;
     return `Quedan ${num} días`;
 }
 
-// Función para pintar marcadores según filtros
+// Función para pintar y recolorear marcadores según filtros
 function aplicarFiltros() {
     grupoMarcadores.clearLayers(); 
     let boundsCount = 0;
@@ -56,10 +54,20 @@ function aplicarFiltros() {
         } else if (filtroActualEstado === "Tramite") {
             mostrarPorEstado = (obj.estadoSeveridad === 'tramite');
         } else if (filtroActualEstado === "Culminado") {
-            mostrarPorEstado = (obj.estadoSeveridad === 'culminado'); // FILTRO DE CULMINADOS
+            mostrarPorEstado = (obj.estadoSeveridad === 'culminado');
+        } else if (filtroActualEstado === "Ley31955") {
+            // Mostrar solo si está amparado por la ley
+            mostrarPorEstado = obj.esLey31955; 
         }
 
         if (mostrarPorID && mostrarPorEstado) {
+            // LÓGICA DE COLOR DINÁMICO
+            if (filtroActualEstado === "Ley31955") {
+                obj.marcador.setStyle({ fillColor: "#F97316" }); // Naranja temporal
+            } else {
+                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); // Restaura su color real
+            }
+
             obj.marcador.addTo(grupoMarcadores);
             boundsCount++;
         }
@@ -114,19 +122,16 @@ Papa.parse(urlCSV, {
                 if (!isNaN(lat) && !isNaN(lon)) {
                     let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                     let severidad = 'normal';
+                    let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); // ¿Aplica ley?
 
-                    // LÓGICA DE PRIORIDAD DE COLORES
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
-                        markerColor = "#10B981"; // Verde
-                        severidad = 'culminado';
+                        markerColor = "#10B981"; severidad = 'culminado';
                     }
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
-                        markerColor = "#A855F7"; // Morado
-                        severidad = 'tramite';
+                        markerColor = "#A855F7"; severidad = 'tramite';
                     }
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
-                        markerColor = "#DC2626"; // Rojo
-                        severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
+                        markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
                     }
                     
                     let marker = L.circleMarker([lat, lon], {
@@ -136,7 +141,14 @@ Papa.parse(urlCSV, {
                     marker.bindPopup(popupContent);
                     marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
                     
-                    marcadoresGuardados.push({ marcador: marker, datos: item, estadoSeveridad: severidad });
+                    // Almacenamos el marcador con su color original guardado
+                    marcadoresGuardados.push({ 
+                        marcador: marker, 
+                        datos: item, 
+                        estadoSeveridad: severidad,
+                        colorOriginal: markerColor, // GUARDAMOS SU COLOR REAL
+                        esLey31955: aplicaLey // IDENTIFICAMOS SI USA LA LEY
+                    });
                 }
             }
         });
