@@ -1,4 +1,4 @@
-// 1. Inicializar el Mapa (Con coordenadas de inicio para la PC)
+// 1. Inicializar el Mapa
 const map = L.map('map').setView([-12.055, -77.050], 12);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -68,12 +68,11 @@ function aplicarFiltros() {
 Papa.parse(urlCSV, {
     download: true, header: true,
     complete: function(results) {
-        window.datosGlobales = results.data; // Se guarda para el botón de WhatsApp
+        window.datosGlobales = results.data; 
         let contenedorIDs = document.getElementById('contenedor-filtros-id');
         
         window.datosGlobales.forEach(item => {
             if (item.Latitud && item.Longitud && item.ID) {
-                // Crear botón de filtro para este ID si no existe
                 if (!document.querySelector(`button[data-id="${item.ID}"]`)) {
                     let btn = document.createElement('button');
                     btn.className = 'btn-pill';
@@ -82,10 +81,8 @@ Papa.parse(urlCSV, {
                     if(contenedorIDs) contenedorIDs.appendChild(btn);
                 }
 
-                // Analizar datos del marcador
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
-
                 let comObra = item.Aut_Obra_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Obra_Comentarios}</div>` : '';
                 let comDesvio = item.Aut_Desvio_Comentarios ? `<div class="popup-comment">💬 ${item.Aut_Desvio_Comentarios}</div>` : '';
 
@@ -127,17 +124,11 @@ Papa.parse(urlCSV, {
                     marker.bindPopup(popupContent);
                     marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
                     
-                    // Guardar en la lista virtual para los filtros
-                    marcadoresGuardados.push({
-                        marcador: marker,
-                        datos: item,
-                        estadoSeveridad: severidad
-                    });
+                    marcadoresGuardados.push({ marcador: marker, datos: item, estadoSeveridad: severidad });
                 }
             }
         });
 
-        // Eventos para los botones de ID
         document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(b => b.classList.remove('active'));
@@ -147,7 +138,6 @@ Papa.parse(urlCSV, {
             });
         });
 
-        // Eventos para los botones de Estado
         document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(b => b.classList.remove('active'));
@@ -157,59 +147,69 @@ Papa.parse(urlCSV, {
             });
         });
 
-        aplicarFiltros(); // Dibujar por primera vez
+        aplicarFiltros(); 
     }
 });
 
-// --- MOTOR DEL REPORTE WHATSAPP ---
-document.getElementById('btn-whatsapp').addEventListener('click', () => {
-    if (!window.datosGlobales || window.datosGlobales.length === 0) {
-        alert("Los datos aún se están cargando...");
-        return;
+// --- MOTOR BLINDADO DEL REPORTE WHATSAPP ---
+// Esperamos a que la página esté totalmente lista para enganchar el botón
+document.addEventListener('DOMContentLoaded', () => {
+    let btnWhatsapp = document.getElementById('btn-whatsapp');
+    
+    if (btnWhatsapp) {
+        btnWhatsapp.addEventListener('click', () => {
+            if (!window.datosGlobales || window.datosGlobales.length === 0) {
+                alert("Los datos aún se están cargando...");
+                return;
+            }
+
+            let vencidos = [];
+            let criticos = [];
+            let tramite = [];
+
+            window.datosGlobales.forEach(item => {
+                if (item.ID && item.Latitud) {
+                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+
+                    let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
+                    let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
+                    let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
+
+                    if (esVencido) vencidos.push(item.ID);
+                    else if (esCritico && !esVencido) criticos.push(item.ID);
+                    else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
+                }
+            });
+
+            let fechaHoy = new Date().toLocaleDateString('es-PE');
+            let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n`;
+
+            if (vencidos.length > 0) texto += `🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.join(', ')}\n\n`;
+            else texto += `🔴 *VENCIDOS:* 0\n\n`;
+
+            if (criticos.length > 0) texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
+            if (tramite.length > 0) texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
+
+            texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
+
+            // Construir el enlace directo a la API de WhatsApp
+            let urlWhatsapp = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(texto);
+
+            // Intentar copiar al portapapeles de forma tradicional (Infalible)
+            try {
+                let textArea = document.createElement("textarea");
+                textArea.value = texto;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            } catch (err) {
+                console.error("No se pudo copiar automáticamente al portapapeles");
+            }
+            
+            // Y finalmente, abrimos WhatsApp de forma directa
+            window.open(urlWhatsapp, '_blank');
+        });
     }
-
-    let vencidos = [];
-    let criticos = [];
-    let tramite = [];
-
-    window.datosGlobales.forEach(item => {
-        if (item.ID && item.Latitud) {
-            let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-            let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
-
-            let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
-            let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
-            let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
-
-            if (esVencido) vencidos.push(item.ID);
-            else if (esCritico && !esVencido) criticos.push(item.ID);
-            else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
-        }
-    });
-
-    let fechaHoy = new Date().toLocaleDateString('es-PE');
-    let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n`;
-
-    if (vencidos.length > 0) {
-        texto += `🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.join(', ')}\n\n`;
-    } else {
-        texto += `🔴 *VENCIDOS:* 0\n\n`;
-    }
-
-    if (criticos.length > 0) {
-        texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
-    }
-
-    if (tramite.length > 0) {
-        texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
-    }
-
-    texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
-
-    navigator.clipboard.writeText(texto).then(() => {
-        alert('✅ ¡Reporte copiado!\nYa puedes pegarlo (Ctrl+V) en tu chat de WhatsApp.');
-    }).catch(err => {
-        console.error('Error al copiar: ', err);
-        alert('Hubo un error al copiar el reporte. Es posible que el navegador esté bloqueando la acción.');
-    });
 });
