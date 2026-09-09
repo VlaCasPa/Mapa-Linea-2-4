@@ -55,6 +55,8 @@ function aplicarFiltros() {
             mostrarPorEstado = (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico');
         } else if (filtroActualEstado === "Tramite") {
             mostrarPorEstado = (obj.estadoSeveridad === 'tramite');
+        } else if (filtroActualEstado === "Culminado") {
+            mostrarPorEstado = (obj.estadoSeveridad === 'culminado'); // FILTRO DE CULMINADOS
         }
 
         if (mostrarPorID && mostrarPorEstado) {
@@ -115,15 +117,15 @@ Papa.parse(urlCSV, {
 
                     // LÓGICA DE PRIORIDAD DE COLORES
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
-                        markerColor = "#10B981"; // Verde (Culminado)
+                        markerColor = "#10B981"; // Verde
                         severidad = 'culminado';
                     }
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
-                        markerColor = "#A855F7"; // Morado (Trámite pisa al culminado si hay mezcla rara)
+                        markerColor = "#A855F7"; // Morado
                         severidad = 'tramite';
                     }
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
-                        markerColor = "#DC2626"; // Rojo (Prioridad Máxima ante cualquier alerta)
+                        markerColor = "#DC2626"; // Rojo
                         severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
                     }
                     
@@ -175,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let vencidos = [];
             let criticos = [];
             let tramite = [];
-            let culminados = []; // NUEVO: Contador de logros
+            let culminados = []; 
 
             window.datosGlobales.forEach(item => {
                 if (item.ID && item.Latitud) {
@@ -202,8 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (criticos.length > 0) texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
             if (tramite.length > 0) texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
-            
-            // Mensaje de éxito al final del reporte
             if (culminados.length > 0) texto += `✅ *OBRAS CULMINADAS (${culminados.length}):*\n${culminados.join(', ')}\n\n`;
 
             texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
