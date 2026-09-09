@@ -1,11 +1,13 @@
+// 1. Inicializar el Mapa (Con coordenadas de inicio para la PC)
 const map = L.map('map').setView([-12.055, -77.050], 12);
+
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors', subdomains: 'abcd', maxZoom: 19
 }).addTo(map);
 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// Variables globales para el filtro
+// Variables globales para el filtro y el reporte
 window.datosGlobales = [];
 let marcadoresGuardados = []; 
 let grupoMarcadores = L.featureGroup().addTo(map);
@@ -39,7 +41,7 @@ function formatearDias(dias) {
 
 // Función para pintar marcadores según filtros
 function aplicarFiltros() {
-    grupoMarcadores.clearLayers(); // Limpiar el mapa
+    grupoMarcadores.clearLayers(); 
     let boundsCount = 0;
 
     marcadoresGuardados.forEach(obj => {
@@ -66,21 +68,21 @@ function aplicarFiltros() {
 Papa.parse(urlCSV, {
     download: true, header: true,
     complete: function(results) {
-        window.datosGlobales = results.data;
+        window.datosGlobales = results.data; // Se guarda para el botón de WhatsApp
         let contenedorIDs = document.getElementById('contenedor-filtros-id');
         
         window.datosGlobales.forEach(item => {
             if (item.Latitud && item.Longitud && item.ID) {
-                // 1. Crear botón de filtro para este ID si no existe
+                // Crear botón de filtro para este ID si no existe
                 if (!document.querySelector(`button[data-id="${item.ID}"]`)) {
                     let btn = document.createElement('button');
                     btn.className = 'btn-pill';
                     btn.setAttribute('data-id', item.ID);
                     btn.innerText = item.ID;
-                    contenedorIDs.appendChild(btn);
+                    if(contenedorIDs) contenedorIDs.appendChild(btn);
                 }
 
-                // 2. Analizar datos del marcador
+                // Analizar datos del marcador
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
 
@@ -125,7 +127,7 @@ Papa.parse(urlCSV, {
                     marker.bindPopup(popupContent);
                     marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
                     
-                    // Guardar en nuestra lista virtual
+                    // Guardar en la lista virtual para los filtros
                     marcadoresGuardados.push({
                         marcador: marker,
                         datos: item,
@@ -159,5 +161,55 @@ Papa.parse(urlCSV, {
     }
 });
 
-// (Aquí se mantiene intacto tu MOTOR DEL REPORTE WHATSAPP anterior que usa window.datosGlobales)
-// ... Asegúrate de conservar las líneas del document.getElementById('btn-whatsapp').addEventListener(...) al final del archivo.
+// --- MOTOR DEL REPORTE WHATSAPP ---
+document.getElementById('btn-whatsapp').addEventListener('click', () => {
+    if (!window.datosGlobales || window.datosGlobales.length === 0) {
+        alert("Los datos aún se están cargando...");
+        return;
+    }
+
+    let vencidos = [];
+    let criticos = [];
+    let tramite = [];
+
+    window.datosGlobales.forEach(item => {
+        if (item.ID && item.Latitud) {
+            let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+            let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+
+            let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
+            let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
+            let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
+
+            if (esVencido) vencidos.push(item.ID);
+            else if (esCritico && !esVencido) criticos.push(item.ID);
+            else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
+        }
+    });
+
+    let fechaHoy = new Date().toLocaleDateString('es-PE');
+    let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n`;
+
+    if (vencidos.length > 0) {
+        texto += `🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.join(', ')}\n\n`;
+    } else {
+        texto += `🔴 *VENCIDOS:* 0\n\n`;
+    }
+
+    if (criticos.length > 0) {
+        texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
+    }
+
+    if (tramite.length > 0) {
+        texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
+    }
+
+    texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
+
+    navigator.clipboard.writeText(texto).then(() => {
+        alert('✅ ¡Reporte copiado!\nYa puedes pegarlo (Ctrl+V) en tu chat de WhatsApp.');
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+        alert('Hubo un error al copiar el reporte. Es posible que el navegador esté bloqueando la acción.');
+    });
+});
