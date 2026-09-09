@@ -57,6 +57,13 @@ body, html {
 .estado-indefinido { background-color: #f0fdfa; color: #0f766e; border-left: 4px solid #14b8a6; }
 .estado-tramite { background-color: #f3e8ff; color: #6b21a8; border-left: 4px solid #a855f7; }
 
+/* NUEVO: Estado Culminado (Gris) */
+.estado-culminado { 
+    background-color: #f3f4f6; 
+    color: #374151; 
+    border-left: 4px solid #9ca3af; 
+}
+
 /* Alerta: Por vencer (Menos de 29 días) */
 .estado-critico { 
     background-color: #fef2f2; 
@@ -118,6 +125,7 @@ body, html {
     background-color: #128C7E;
     transform: scale(1.05);
 }
+
 /* --- Título Responsivo --- */
 #titulo-flotante {
     position: absolute;
@@ -191,9 +199,3 @@ body, html {
 .btn-pill.active { background-color: #0f172a; color: white; border-color: #0f172a; }
 .btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
-/* Nuevo Estado: Obra Culminada (Ventana Gris) */
-.estado-culminado { 
-    background-color: #f3f4f6; 
-    color: #374151; 
-    border-left: 4px solid #9ca3af; 
-}
