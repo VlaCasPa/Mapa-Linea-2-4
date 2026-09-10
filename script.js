@@ -67,11 +67,11 @@ function aplicarFiltros() {
         if (mostrarPorID && mostrarPorEstado) {
             // LÓGICA DE COLOR DINÁMICO (Ley 31955 y En Trámite)
             if (filtroActualEstado === "Ley31955") {
-                obj.marcador.setStyle({ fillColor: "#F97316" }); // Naranja temporal
+                obj.marcador.setStyle({ fillColor: "#F97316" }); 
             } else if (filtroActualEstado === "Tramite") {
-                obj.marcador.setStyle({ fillColor: "#A855F7" }); // Morado temporal
+                obj.marcador.setStyle({ fillColor: "#A855F7" }); 
             } else {
-                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); // Restaura su color base
+                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); 
             }
 
             obj.marcador.addTo(grupoMarcadores);
@@ -82,6 +82,23 @@ function aplicarFiltros() {
     if (boundsCount > 0) {
         map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
     }
+}
+
+// --- NUEVA FUNCIÓN: ACTUALIZAR KPIs ---
+function actualizarKPIs() {
+    let countCriticos = 0, countLey = 0, countTramite = 0, countCulminados = 0;
+
+    marcadoresGuardados.forEach(obj => {
+        if (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico') countCriticos++;
+        else if (obj.esLey31955) countLey++;
+        else if (obj.estadoSeveridad === 'tramite') countTramite++;
+        else if (obj.estadoSeveridad === 'culminado') countCulminados++;
+    });
+
+    if (document.getElementById('kpi-rojo')) document.getElementById('kpi-rojo').innerText = countCriticos;
+    if (document.getElementById('kpi-naranja')) document.getElementById('kpi-naranja').innerText = countLey;
+    if (document.getElementById('kpi-morado')) document.getElementById('kpi-morado').innerText = countTramite;
+    if (document.getElementById('kpi-verde')) document.getElementById('kpi-verde').innerText = countCulminados;
 }
 
 Papa.parse(urlCSV, {
@@ -138,20 +155,16 @@ Papa.parse(urlCSV, {
                 let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
 
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    // COLOR BASE: Azul o Gris
                     let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                     let severidad = 'normal';
                     let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
 
-                    // 1. Si está culminado, el color base es Verde
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
                         markerColor = "#10B981"; severidad = 'culminado';
                     }
-                    // 2. Si está en trámite, configuramos la severidad, pero NO le cambiamos el color base
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
                         severidad = 'tramite';
                     }
-                    // 3. PRIORIDAD MÁXIMA: Si es rojo/crítico, siempre pinta de rojo en la vista general
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                         markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
                     }
@@ -193,33 +206,7 @@ Papa.parse(urlCSV, {
         });
 
         aplicarFiltros(); 
-        
-        // --- MOTOR DE KPIs EJECUTIVOS ---
-        let countCriticos = 0, countLey = 0, countTramite = 0, countCulminados = 0;
-        
-        window.datosGlobales.forEach(item => {
-            if (item.ID && item.Latitud) {
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
-                
-                let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
-                let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
-                let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
-                let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
-                let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado');
-                
-                if (esVencido || esCritico) countCriticos++;
-                else if (esLey) countLey++;
-                else if (esTramite) countTramite++;
-                else if (esCulminado) countCulminados++;
-            }
-        });
-        
-        // Inyectar los valores en las tarjetas HTML
-        if (document.getElementById('kpi-rojo')) document.getElementById('kpi-rojo').innerText = countCriticos;
-        if (document.getElementById('kpi-naranja')) document.getElementById('kpi-naranja').innerText = countLey;
-        if (document.getElementById('kpi-morado')) document.getElementById('kpi-morado').innerText = countTramite;
-        if (document.getElementById('kpi-verde')) document.getElementById('kpi-verde').innerText = countCulminados;
+        actualizarKPIs(); // EJECUTAMOS EL CONTEO AL FINALIZAR LA CARGA
     }
 });
 
