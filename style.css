@@ -228,7 +228,7 @@ body, html {
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; }
 
-/* --- Efecto tenue para el Mapa Base --- */
-.mapa-tenue {
-    filter: grayscale(50%) contrast(80%);
+/* --- Filtro para volver a Google Maps Gris Tenue --- */
+.mapa-google-gris {
+    filter: grayscale(100%) contrast(70%) brightness(1.15);
 }
