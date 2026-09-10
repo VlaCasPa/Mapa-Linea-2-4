@@ -190,7 +190,7 @@ body, html {
 
 .filtro-label {
     display: block;
-    font-size: 11px;
+    font-size: 9px; /* <-- Reducido 2 puntos (antes 11px) */
     font-weight: 700;
     color: #4b5563;
     margin-bottom: 8px;
@@ -211,9 +211,9 @@ body, html {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     color: #374151;
-    padding: 6px 14px;
+    padding: 5px 12px; /* <-- Ajusté un poquito el relleno para que el botón esté proporcionado al texto pequeño */
     border-radius: 50px;
-    font-size: 13px;
+    font-size: 11px; /* <-- Reducido 2 puntos (antes 13px) */
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
