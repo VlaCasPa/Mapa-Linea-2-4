@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Autorizaciones - Línea 2 Metro</title>
-    <!-- Importamos Leaflet (El Mapa) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Importamos nuestro diseño -->
     <link rel="stylesheet" href="style.css">
-    <!-- Fuente moderna de Google -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -31,11 +28,13 @@
                 <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Críticas/Vencidas</button>
                 <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
                 <button class="btn-pill btn-culminado" data-estado="Culminado">🟢 Culminadas</button>
+                <!-- BOTÓN RESTAURADO: LEY N° 31955 -->
+                <button class="btn-pill btn-ley" data-estado="Ley31955">🟠 Ley N° 31955</button>
             </div>
         </div>
     </div>
 
-    <!-- EL CONTENEDOR DEL MAPA (Si esto se borra, no se ven las estructuras) -->
+    <!-- EL CONTENEDOR DEL MAPA -->
     <div id="map"></div>
     
     <!-- Botón Flotante WhatsApp con Firma Integrada -->
