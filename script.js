@@ -1,8 +1,12 @@
 const map = L.map('map').setView([-12.055, -77.050], 12);
 
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri',
-    maxZoom: 19
+// 2. Mapa Base: Google Maps (Estilo Tenue)
+L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    attribution: '&copy; Google',
+    opacity: 0.75, // <-- Reduce la intensidad del mapa (1 es normal, 0 es invisible)
+    className: 'mapa-tenue' // <-- Etiqueta para aplicar nuestro filtro CSS
 }).addTo(map);
 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
