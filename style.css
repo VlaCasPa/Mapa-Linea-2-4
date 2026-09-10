@@ -232,3 +232,18 @@ body, html {
 .mapa-google-gris {
     filter: grayscale(100%) contrast(70%) brightness(1.15);
 }
+
+/* --- Firma de Diseño --- */
+.firma-diseno {
+    position: absolute;
+    bottom: 8px; /* Lo ubica justo debajo del botón flotante */
+    right: 25px; /* Lo alinea visualmente con el botón */
+    z-index: 1000;
+    font-size: 10px;
+    font-weight: 500;
+    color: #6b7280; /* Un gris tenue y profesional */
+    letter-spacing: 0.5px; /* Le da elegancia y respiración al texto */
+    font-family: 'Inter', sans-serif;
+    pointer-events: none; /* Evita que interfiera si alguien intenta hacer clic en el mapa cerca del texto */
+    opacity: 0.8;
+}
