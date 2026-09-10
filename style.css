@@ -230,5 +230,5 @@ body, html {
 
 /* --- Efecto tenue para el Mapa Base --- */
 .mapa-tenue {
-    filter: grayscale(60%) contrast(90%);
+    filter: grayscale(50%) contrast(80%);
 }
