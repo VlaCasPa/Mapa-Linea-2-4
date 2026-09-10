@@ -227,3 +227,8 @@ body, html {
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; }
+
+/* --- Efecto tenue para el Mapa Base --- */
+.mapa-tenue {
+    filter: grayscale(60%) contrast(90%);
+}
