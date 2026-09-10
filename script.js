@@ -65,11 +65,13 @@ function aplicarFiltros() {
         }
 
         if (mostrarPorID && mostrarPorEstado) {
-            // LÓGICA DE COLOR DINÁMICO NARANJA
+            // LÓGICA DE COLOR DINÁMICO (Ley 31955 y En Trámite)
             if (filtroActualEstado === "Ley31955") {
-                obj.marcador.setStyle({ fillColor: "#F97316" }); 
+                obj.marcador.setStyle({ fillColor: "#F97316" }); // Naranja temporal
+            } else if (filtroActualEstado === "Tramite") {
+                obj.marcador.setStyle({ fillColor: "#A855F7" }); // Morado temporal
             } else {
-                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); 
+                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); // Restaura su color base
             }
 
             obj.marcador.addTo(grupoMarcadores);
@@ -136,16 +138,20 @@ Papa.parse(urlCSV, {
                 let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
 
                 if (!isNaN(lat) && !isNaN(lon)) {
+                    // COLOR BASE: Azul o Gris
                     let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                     let severidad = 'normal';
                     let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
 
+                    // 1. Si está culminado, el color base es Verde
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
                         markerColor = "#10B981"; severidad = 'culminado';
                     }
+                    // 2. Si está en trámite, configuramos la severidad, pero NO le cambiamos el color base
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
-                        markerColor = "#A855F7"; severidad = 'tramite';
+                        severidad = 'tramite';
                     }
+                    // 3. PRIORIDAD MÁXIMA: Si es rojo/crítico, siempre pinta de rojo en la vista general
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                         markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
                     }
@@ -205,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let criticos = [];
             let tramite = [];
             let culminados = []; 
-            let ley31955 = []; // NUEVA CATEGORÍA PARA EL REPORTE
+            let ley31955 = []; 
 
             window.datosGlobales.forEach(item => {
                 if (item.ID && item.Latitud) {
@@ -216,14 +222,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
                     let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
                     let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
-                    let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); // NUEVO FILTRO
+                    let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
 
                     if (esVencido) vencidos.push(item.ID);
                     else if (esCritico && !esVencido) criticos.push(item.ID);
                     else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
                     else if (esCulminado && !esVencido && !esCritico && !esTramite) culminados.push(item.ID);
                     
-                    if (esLey) ley31955.push(item.ID); // Guardamos para la lista de la Ley
+                    if (esLey) ley31955.push(item.ID); 
                 }
             });
 
@@ -236,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (criticos.length > 0) texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
             if (tramite.length > 0) texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
             if (culminados.length > 0) texto += `✅ *OBRAS CULMINADAS (${culminados.length}):*\n${culminados.join(', ')}\n\n`;
-            if (ley31955.length > 0) texto += `🟠 *AMPARO LEY N° 31955 (${ley31955.length}):*\n${ley31955.join(', ')}\n\n`; // AÑADIDO AL REPORTE
+            if (ley31955.length > 0) texto += `🟠 *AMPARO LEY N° 31955 (${ley31955.length}):*\n${ley31955.join(', ')}\n\n`; 
 
             texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
 
