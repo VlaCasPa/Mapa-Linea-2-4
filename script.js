@@ -193,6 +193,33 @@ Papa.parse(urlCSV, {
         });
 
         aplicarFiltros(); 
+        
+        // --- MOTOR DE KPIs EJECUTIVOS ---
+        let countCriticos = 0, countLey = 0, countTramite = 0, countCulminados = 0;
+        
+        window.datosGlobales.forEach(item => {
+            if (item.ID && item.Latitud) {
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                
+                let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
+                let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
+                let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
+                let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
+                let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado');
+                
+                if (esVencido || esCritico) countCriticos++;
+                else if (esLey) countLey++;
+                else if (esTramite) countTramite++;
+                else if (esCulminado) countCulminados++;
+            }
+        });
+        
+        // Inyectar los valores en las tarjetas HTML
+        if (document.getElementById('kpi-rojo')) document.getElementById('kpi-rojo').innerText = countCriticos;
+        if (document.getElementById('kpi-naranja')) document.getElementById('kpi-naranja').innerText = countLey;
+        if (document.getElementById('kpi-morado')) document.getElementById('kpi-morado').innerText = countTramite;
+        if (document.getElementById('kpi-verde')) document.getElementById('kpi-verde').innerText = countCulminados;
     }
 });
 
