@@ -1,12 +1,12 @@
 const map = L.map('map').setView([-12.055, -77.050], 12);
 
-// 2. Mapa Base: Google Maps (Monocromático Tenue)
+// Mapa Base: Google Maps (Monocromático Tenue)
 L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
     maxZoom: 20,
     subdomains: ['mt0','mt1','mt2','mt3'],
     attribution: '&copy; Google',
-    opacity: 0.65, // <-- Hace que todo el mapa se mezcle con el fondo
-    className: 'mapa-google-gris' // <-- Etiqueta para nuestro filtro de color
+    opacity: 0.65,
+    className: 'mapa-google-gris' 
 }).addTo(map);
 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
@@ -65,11 +65,11 @@ function aplicarFiltros() {
         }
 
         if (mostrarPorID && mostrarPorEstado) {
-            // LÓGICA DE COLOR DINÁMICO
+            // LÓGICA DE COLOR DINÁMICO NARANJA
             if (filtroActualEstado === "Ley31955") {
-                obj.marcador.setStyle({ fillColor: "#F97316" }); // Naranja temporal
+                obj.marcador.setStyle({ fillColor: "#F97316" }); 
             } else {
-                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); // Restaura su color real
+                obj.marcador.setStyle({ fillColor: obj.colorOriginal }); 
             }
 
             obj.marcador.addTo(grupoMarcadores);
@@ -101,7 +101,6 @@ Papa.parse(urlCSV, {
                 let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
                 let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
                 
-                // SISTEMA DESPLEGABLE PARA COMENTARIOS LARGOS
                 let comObra = item.Aut_Obra_Comentarios ? `
                     <details class="popup-details">
                         <summary class="popup-summary">💬 Ver comentarios de obra...</summary>
@@ -206,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let criticos = [];
             let tramite = [];
             let culminados = []; 
+            let ley31955 = []; // NUEVA CATEGORÍA PARA EL REPORTE
 
             window.datosGlobales.forEach(item => {
                 if (item.ID && item.Latitud) {
@@ -216,11 +216,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
                     let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
                     let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
+                    let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); // NUEVO FILTRO
 
                     if (esVencido) vencidos.push(item.ID);
                     else if (esCritico && !esVencido) criticos.push(item.ID);
                     else if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
                     else if (esCulminado && !esVencido && !esCritico && !esTramite) culminados.push(item.ID);
+                    
+                    if (esLey) ley31955.push(item.ID); // Guardamos para la lista de la Ley
                 }
             });
 
@@ -233,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (criticos.length > 0) texto += `🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.join(', ')}\n\n`;
             if (tramite.length > 0) texto += `🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.join(', ')}\n\n`;
             if (culminados.length > 0) texto += `✅ *OBRAS CULMINADAS (${culminados.length}):*\n${culminados.join(', ')}\n\n`;
+            if (ley31955.length > 0) texto += `🟠 *AMPARO LEY N° 31955 (${ley31955.length}):*\n${ley31955.join(', ')}\n\n`; // AÑADIDO AL REPORTE
 
             texto += `🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
 
