@@ -228,7 +228,7 @@ body, html {
 
 .btn-text-sub {
     display: block; /* Obliga a que siempre vaya en una nueva línea */
-    font-size: 10px; /* Exactamente 2 puntos más pequeño que el principal */
+    font-size: 8px; /* Exactamente 2 puntos más pequeño que el principal */
     font-weight: 600; /* Seminegrita para garantizar la lectura en pantallas pequeñas */
     color: #374151; /* Gris oscuro profesional (excelente contraste sobre el verde) */
     margin-top: 3px;
