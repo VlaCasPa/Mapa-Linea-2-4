@@ -56,20 +56,8 @@ body, html {
 .estado-exonerado { background-color: #eef2ff; color: #3730a3; border-left: 4px solid #6366f1; }
 .estado-indefinido { background-color: #f0fdfa; color: #0f766e; border-left: 4px solid #14b8a6; }
 .estado-tramite { background-color: #f3e8ff; color: #6b21a8; border-left: 4px solid #a855f7; }
-
-/* Estado Culminado (Gris) */
-.estado-culminado { 
-    background-color: #f3f4f6; 
-    color: #374151; 
-    border-left: 4px solid #9ca3af; 
-}
-
-/* Alerta: Por vencer (Menos de 29 días) */
-.estado-critico { 
-    background-color: #fef2f2; 
-    color: #b91c1c; 
-    border-left: 4px solid #ef4444; 
-}
+.estado-culminado { background-color: #f3f4f6; color: #374151; border-left: 4px solid #9ca3af; }
+.estado-critico { background-color: #fef2f2; color: #b91c1c; border-left: 4px solid #ef4444; }
 
 /* Alerta: Vencido (Borde completo agresivo) */
 .estado-vencido { 
@@ -80,7 +68,7 @@ body, html {
     font-weight: 700; 
 }
 
-/* --- Sistema Desplegable para Comentarios (NUEVO) --- */
+/* --- Sistema Desplegable para Comentarios --- */
 .popup-details {
     margin-top: 8px;
     border-top: 1px dashed #d1d5db;
@@ -128,30 +116,6 @@ body, html {
     text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
 }
 
-/* --- Botón Flotante WhatsApp --- */
-.btn-float {
-    position: absolute;
-    bottom: 25px;
-    right: 20px;
-    z-index: 1000; 
-    background-color: #25D366; 
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 50px;
-    font-size: 14px;
-    font-weight: 700;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Inter', sans-serif;
-}
-
-.btn-float:hover {
-    background-color: #128C7E;
-    transform: scale(1.05);
-}
-
 /* --- Título Responsivo --- */
 #titulo-flotante {
     position: absolute;
@@ -188,9 +152,10 @@ body, html {
     margin-bottom: 12px;
 }
 
+/* Textos optimizados (9px) */
 .filtro-label {
     display: block;
-    font-size: 9px; /* <-- Reducido 2 puntos (antes 11px) */
+    font-size: 9px;
     font-weight: 700;
     color: #4b5563;
     margin-bottom: 8px;
@@ -206,14 +171,14 @@ body, html {
     scrollbar-width: thin;
 }
 
-/* Botones Píldora */
+/* Botones Píldora optimizados (11px) */
 .btn-pill {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     color: #374151;
-    padding: 5px 12px; /* <-- Ajusté un poquito el relleno para que el botón esté proporcionado al texto pequeño */
+    padding: 5px 12px;
     border-radius: 50px;
-    font-size: 11px; /* <-- Reducido 2 puntos (antes 13px) */
+    font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -226,24 +191,48 @@ body, html {
 .btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
-.btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; }
+.btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; } 
+
+/* --- Botón Flotante WhatsApp (Actualizado con Firma VCasasP) --- */
+.btn-float {
+    position: absolute;
+    bottom: 25px; 
+    right: 20px;
+    z-index: 1000; 
+    background-color: #25D366; 
+    color: white;
+    border: none;
+    padding: 8px 18px; 
+    border-radius: 25px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    line-height: 1.2;
+}
+
+.btn-float:hover {
+    background-color: #128C7E; 
+    transform: scale(1.05);
+}
+
+.btn-text-main {
+    font-size: 12px; 
+    font-weight: 700;
+}
+
+.btn-text-sub {
+    font-size: 9px; 
+    font-weight: 400;
+    opacity: 0.85; 
+    margin-top: 3px;
+    letter-spacing: 0.3px; 
+}
 
 /* --- Filtro para volver a Google Maps Gris Tenue --- */
 .mapa-google-gris {
     filter: grayscale(100%) contrast(70%) brightness(1.15);
-}
-
-/* --- Firma de Diseño --- */
-.firma-diseno {
-    position: absolute;
-    bottom: 8px; /* Lo ubica justo debajo del botón flotante */
-    right: 25px; /* Lo alinea visualmente con el botón */
-    z-index: 1000;
-    font-size: 10px;
-    font-weight: 500;
-    color: #6b7280; /* Un gris tenue y profesional */
-    letter-spacing: 0.5px; /* Le da elegancia y respiración al texto */
-    font-family: 'Inter', sans-serif;
-    pointer-events: none; /* Evita que interfiera si alguien intenta hacer clic en el mapa cerca del texto */
-    opacity: 0.8;
 }
