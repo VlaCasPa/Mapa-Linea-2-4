@@ -84,7 +84,7 @@ function aplicarFiltros() {
     }
 }
 
-// --- FUNCIÓN: ACTUALIZAR KPIs ---
+// --- NUEVA FUNCIÓN: ACTUALIZAR KPIs ---
 function actualizarKPIs() {
     let countCriticos = 0, countLey = 0, countTramite = 0, countCulminados = 0;
 
@@ -155,40 +155,22 @@ Papa.parse(urlCSV, {
                 let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
 
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    // COLOR BASE
                     let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                     let severidad = 'normal';
                     let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
 
-                    // --- LÓGICA DE ALERTA DE 4 MESES (120 DÍAS) ---
-                    let diasObra = parseInt(item.Aut_Obra_Dias_Restantes);
-                    let diasDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
-                    let alertaPreventiva = false;
-
-                    if ((!isNaN(diasObra) && diasObra > 29 && diasObra <= 120) || 
-                        (!isNaN(diasDesvio) && diasDesvio > 29 && diasDesvio <= 120)) {
-                        alertaPreventiva = true;
-                    }
-
-                    // PRIORIDADES (Apagan o cambian colores)
                     if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
                         markerColor = "#10B981"; severidad = 'culminado';
-                        alertaPreventiva = false; // Se apaga si está culminado
                     }
                     if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
                         severidad = 'tramite';
                     }
                     if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                         markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico';
-                        alertaPreventiva = false; // El rojo crítico tiene prioridad absoluta sobre la alerta preventiva
                     }
-
-                    // Se asigna la clase dinámica según la alerta
-                    let claseMarcador = alertaPreventiva ? 'brillo-preventivo' : '';
                     
                     let marker = L.circleMarker([lat, lon], {
-                        radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8,
-                        className: claseMarcador
+                        radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8
                     });
 
                     marker.bindPopup(popupContent);
@@ -224,7 +206,7 @@ Papa.parse(urlCSV, {
         });
 
         aplicarFiltros(); 
-        actualizarKPIs(); 
+        actualizarKPIs(); // EJECUTAMOS EL CONTEO AL FINALIZAR LA CARGA
     }
 });
 
