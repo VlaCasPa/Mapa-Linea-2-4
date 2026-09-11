@@ -310,3 +310,18 @@ body, html {
         font-size: 18px;
     }
 }
+
+/* --- NUEVO: Alerta visual de 4 meses (120 días) --- */
+.brillo-preventivo {
+    /* Animación infinita que alterna su intensidad */
+    animation: destello-amarillo-pastel 2s infinite alternate;
+}
+
+@keyframes destello-amarillo-pastel {
+    from { 
+        filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); 
+    }
+    to { 
+        filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.9)); 
+    }
+}
