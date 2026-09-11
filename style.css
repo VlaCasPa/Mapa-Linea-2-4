@@ -11,7 +11,7 @@ body, html {
     width: 100%;
 }
 
-/* --- Diseño de la Ventana Emergente --- */
+/* --- Ventana Emergente --- */
 .leaflet-popup-content-wrapper {
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -51,7 +51,7 @@ body, html {
     display: block;
 }
 
-/* --- Colores de Estados Legales --- */
+/* --- Estados Legales --- */
 .estado-optimo { background-color: #ecfdf5; color: #065f46; border-left: 4px solid #10b981; }
 .estado-exonerado { background-color: #eef2ff; color: #3730a3; border-left: 4px solid #6366f1; }
 .estado-indefinido { background-color: #f0fdfa; color: #0f766e; border-left: 4px solid #14b8a6; }
@@ -59,7 +59,6 @@ body, html {
 .estado-culminado { background-color: #f3f4f6; color: #374151; border-left: 4px solid #9ca3af; }
 .estado-critico { background-color: #fef2f2; color: #b91c1c; border-left: 4px solid #ef4444; }
 
-/* Alerta: Vencido (Borde completo agresivo) */
 .estado-vencido { 
     background-color: #fef2f2; 
     color: #991b1b; 
@@ -68,7 +67,7 @@ body, html {
     font-weight: 700; 
 }
 
-/* --- Sistema Desplegable para Comentarios --- */
+/* --- Comentarios --- */
 .popup-details {
     margin-top: 8px;
     border-top: 1px dashed #d1d5db;
@@ -105,7 +104,7 @@ body, html {
     border: 1px solid #e5e7eb;
 }
 
-/* --- Diseño del ID siempre visible --- */
+/* --- Tooltip ID --- */
 .id-tooltip {
     background-color: transparent !important;
     border: none !important;
@@ -116,7 +115,7 @@ body, html {
     text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
 }
 
-/* --- Título Responsivo --- */
+/* --- Título Flotante --- */
 #titulo-flotante {
     position: absolute;
     top: 15px;
@@ -134,7 +133,7 @@ body, html {
     border-left: 5px solid #2563EB;
 }
 
-/* --- Panel de Filtros --- */
+/* --- Panel Filtros --- */
 #panel-filtros {
     position: absolute;
     top: 70px;
@@ -152,7 +151,6 @@ body, html {
     margin-bottom: 12px;
 }
 
-/* Textos optimizados (9px) */
 .filtro-label {
     display: block;
     font-size: 9px;
@@ -171,7 +169,6 @@ body, html {
     scrollbar-width: thin;
 }
 
-/* Botones Píldora optimizados (11px) */
 .btn-pill {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
@@ -189,11 +186,12 @@ body, html {
 .btn-pill:hover { background-color: #f3f4f6; }
 .btn-pill.active { background-color: #0f172a; color: white; border-color: #0f172a; }
 .btn-critico.active { background-color: #dc2626; border-color: #dc2626; }
+.btn-meses.active { background-color: #eab308; border-color: #eab308; color: #111827; }
 .btn-tramite.active { background-color: #a855f7; border-color: #a855f7; }
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; } 
 
-/* --- Botón Flotante WhatsApp (Actualizado con Firma VCasasP) --- */
+/* --- WhatsApp Float --- */
 .btn-float {
     position: absolute;
     bottom: 25px; 
@@ -220,93 +218,28 @@ body, html {
 }
 
 .btn-text-main {
-    display: block;
-    font-size: 12px; /* Tamaño base del botón */
+    font-size: 12px; 
     font-weight: 700;
-    color: #ffffff; /* Texto principal en blanco puro */
 }
 
 .btn-text-sub {
-    display: block; /* Obliga a que siempre vaya en una nueva línea */
-    font-size: 8px; /* Exactamente 2 puntos más pequeño que el principal */
-    font-weight: 600; /* Seminegrita para garantizar la lectura en pantallas pequeñas */
-    color: #374151; /* Gris oscuro profesional (excelente contraste sobre el verde) */
+    font-size: 9px; 
+    font-weight: 400;
+    opacity: 0.85; 
     margin-top: 3px;
     letter-spacing: 0.3px; 
 }
 
-/* --- Filtro para volver a Google Maps Gris Tenue --- */
-.mapa-google-gris {
-    filter: grayscale(100%) contrast(70%) brightness(1.15);
+/* --- Alerta visual < 4 meses (120 días) --- */
+.brillo-preventivo {
+    animation: destello-amarillo-pastel 2s infinite alternate;
 }
 
-/* --- Panel de KPIs Ejecutivos --- */
-#panel-kpis {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-}
-
-.kpi-card {
-    background-color: rgba(255, 255, 255, 0.95);
-    padding: 10px 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    text-align: center;
-    min-width: 75px;
-    border-top: 4px solid #d1d5db;
-    font-family: 'Inter', sans-serif;
-}
-
-.kpi-title {
-    display: block;
-    font-size: 9px;
-    font-weight: 700;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 2px;
-}
-
-.kpi-value {
-    display: block;
-    font-size: 22px;
-    font-weight: 700;
-}
-
-/* Colores de cada KPI */
-.kpi-critico { border-top-color: #dc2626; }
-.kpi-critico .kpi-value { color: #dc2626; }
-
-.kpi-ley { border-top-color: #F97316; }
-.kpi-ley .kpi-value { color: #F97316; }
-
-.kpi-tramite { border-top-color: #a855f7; }
-.kpi-tramite .kpi-value { color: #a855f7; }
-
-.kpi-culminado { border-top-color: #10B981; }
-.kpi-culminado .kpi-value { color: #10B981; }
-
-/* Adaptación para Celulares */
-@media (max-width: 768px) {
-    #panel-kpis {
-        top: auto;
-        bottom: 85px; /* Se ubica arriba del botón de WhatsApp */
-        right: 50%;
-        transform: translateX(50%);
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-        gap: 5px;
+@keyframes destello-amarillo-pastel {
+    from { 
+        filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); 
     }
-    .kpi-card {
-        padding: 8px 10px;
-        min-width: 65px;
-    }
-    .kpi-value {
-        font-size: 18px;
+    to { 
+        filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.9)); 
     }
 }
