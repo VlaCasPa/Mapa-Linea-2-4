@@ -152,7 +152,7 @@ body, html {
     margin-bottom: 12px;
 }
 
-/* Textos optimizados (9px) */
+/* Textos optimizados */
 .filtro-label {
     display: block;
     font-size: 9px;
@@ -171,7 +171,7 @@ body, html {
     scrollbar-width: thin;
 }
 
-/* Botones Píldora optimizados (11px) */
+/* Botones Píldora optimizados */
 .btn-pill {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
@@ -193,7 +193,7 @@ body, html {
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; } 
 
-/* --- Botón Flotante WhatsApp (Actualizado con Firma VCasasP) --- */
+/* --- Botón Flotante WhatsApp --- */
 .btn-float {
     position: absolute;
     bottom: 25px; 
@@ -220,17 +220,14 @@ body, html {
 }
 
 .btn-text-main {
-    display: block;
-    font-size: 12px; /* Tamaño base del botón */
+    font-size: 12px; 
     font-weight: 700;
-    color: #ffffff; /* Texto principal en blanco puro */
 }
 
 .btn-text-sub {
-    display: block; /* Obliga a que siempre vaya en una nueva línea */
-    font-size: 8px; /* Exactamente 2 puntos más pequeño que el principal */
-    font-weight: 600; /* Seminegrita para garantizar la lectura en pantallas pequeñas */
-    color: #374151; /* Gris oscuro profesional (excelente contraste sobre el verde) */
+    font-size: 9px; 
+    font-weight: 400;
+    opacity: 0.85; 
     margin-top: 3px;
     letter-spacing: 0.3px; 
 }
@@ -240,80 +237,8 @@ body, html {
     filter: grayscale(100%) contrast(70%) brightness(1.15);
 }
 
-/* --- Panel de KPIs Ejecutivos --- */
-#panel-kpis {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1000;
-    display: flex;
-    gap: 10px;
-}
-
-.kpi-card {
-    background-color: rgba(255, 255, 255, 0.95);
-    padding: 10px 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    text-align: center;
-    min-width: 75px;
-    border-top: 4px solid #d1d5db;
-    font-family: 'Inter', sans-serif;
-}
-
-.kpi-title {
-    display: block;
-    font-size: 9px;
-    font-weight: 700;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 2px;
-}
-
-.kpi-value {
-    display: block;
-    font-size: 22px;
-    font-weight: 700;
-}
-
-/* Colores de cada KPI */
-.kpi-critico { border-top-color: #dc2626; }
-.kpi-critico .kpi-value { color: #dc2626; }
-
-.kpi-ley { border-top-color: #F97316; }
-.kpi-ley .kpi-value { color: #F97316; }
-
-.kpi-tramite { border-top-color: #a855f7; }
-.kpi-tramite .kpi-value { color: #a855f7; }
-
-.kpi-culminado { border-top-color: #10B981; }
-.kpi-culminado .kpi-value { color: #10B981; }
-
-/* Adaptación para Celulares */
-@media (max-width: 768px) {
-    #panel-kpis {
-        top: auto;
-        bottom: 85px; /* Se ubica arriba del botón de WhatsApp */
-        right: 50%;
-        transform: translateX(50%);
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-        gap: 5px;
-    }
-    .kpi-card {
-        padding: 8px 10px;
-        min-width: 65px;
-    }
-    .kpi-value {
-        font-size: 18px;
-    }
-}
-
 /* --- NUEVO: Alerta visual de 4 meses (120 días) --- */
 .brillo-preventivo {
-    /* Animación infinita que alterna su intensidad */
     animation: destello-amarillo-pastel 2s infinite alternate;
 }
 
