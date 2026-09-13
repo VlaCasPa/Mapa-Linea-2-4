@@ -11,7 +11,7 @@ body, html {
     width: 100%;
 }
 
-/* --- Mapa Base Google Maps en Gris Tenue --- */
+/* --- Mapa Base Google Maps Monocromático Tenue --- */
 .mapa-google-gris {
     filter: grayscale(100%) brightness(1.05) contrast(0.9);
 }
@@ -72,7 +72,7 @@ body, html {
     font-weight: 700; 
 }
 
-/* --- Sistema Desplegable de Comentarios --- */
+/* --- Comentarios Plegables --- */
 .popup-details {
     margin-top: 8px;
     border-top: 1px dashed #d1d5db;
@@ -109,7 +109,7 @@ body, html {
     border: 1px solid #e5e7eb;
 }
 
-/* --- Tooltip ID --- */
+/* --- Tooltip ID en Mapa --- */
 .id-tooltip {
     background-color: transparent !important;
     border: none !important;
@@ -138,10 +138,10 @@ body, html {
     border-left: 5px solid #2563EB;
 }
 
-/* --- Panel de KPIs Ejecutivos (Esquina Superior Derecha) --- */
+/* --- Panel de KPIs Ejecutivos (Modificado para no superponer título) --- */
 #panel-kpis {
     position: absolute;
-    top: 15px;
+    top: 70px; /* Bajado para alinear con el panel de filtros y liberar el título */
     right: 15px;
     z-index: 1000;
     display: flex;
@@ -174,7 +174,6 @@ body, html {
     font-weight: 700;
 }
 
-/* Bordes y colores numéricos de los KPIs */
 .kpi-critico { border-top-color: #dc2626; }
 .kpi-critico .kpi-value { color: #dc2626; }
 
@@ -190,7 +189,7 @@ body, html {
 .kpi-culminado { border-top-color: #10B981; }
 .kpi-culminado .kpi-value { color: #10B981; }
 
-/* --- Panel Filtros (Esquina Superior Izquierda) --- */
+/* --- Panel Filtros --- */
 #panel-filtros {
     position: absolute;
     top: 70px;
@@ -248,7 +247,7 @@ body, html {
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; } 
 
-/* --- Botón WhatsApp Flotante --- */
+/* --- Botón Flotante WhatsApp --- */
 .btn-float {
     position: absolute;
     bottom: 25px; 
@@ -289,10 +288,10 @@ body, html {
 
 /* --- Alerta visual destellante < 4 meses --- */
 .brillo-preventivo {
-    animation: destello-amarillo 2s infinite alternate;
+    animation: destello-amarillo-pastel 2s infinite alternate;
 }
 
-@keyframes destello-amarillo {
+@keyframes destello-amarillo-pastel {
     from { 
         filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); 
     }
@@ -301,7 +300,7 @@ body, html {
     }
 }
 
-/* --- Adaptabilidad en Móviles --- */
+/* --- Responsividad Móvil Optimizada (NUEVO DISEÑO CELULAR) --- */
 @media (max-width: 768px) {
     #titulo-flotante {
         position: static;
@@ -310,21 +309,46 @@ body, html {
         text-align: center;
         width: fit-content;
     }
+    
+    /* 1. Panel KPIs en una sola fila pegados al fondo */
     #panel-kpis {
         top: auto;
-        bottom: 85px; 
+        bottom: 10px; 
         right: 50%;
         transform: translateX(50%);
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-        gap: 5px;
+        flex-wrap: nowrap; /* Fuerza a mantenerse en 1 sola fila */
+        justify-content: space-between;
+        width: 96%;
+        gap: 2px;
+        overflow-x: auto;
     }
+    
+    /* 2. Tarjetas KPI reducidas y proporcionales para encajar */
     .kpi-card {
-        padding: 6px 8px;
-        min-width: 55px;
+        padding: 5px 2px;
+        min-width: 0;
+        flex: 1; /* Distribuye el espacio equitativamente */
+        margin: 0 2px;
+    }
+    .kpi-title {
+        font-size: 7px;
+        margin-bottom: 2px;
+        letter-spacing: 0; 
     }
     .kpi-value {
-        font-size: 16px;
+        font-size: 14px;
+    }
+
+    /* 3. Botón WhatsApp por encima de los KPIs */
+    .btn-float {
+        bottom: 75px; 
+        right: 15px;
+        padding: 8px 16px;
+    }
+    .btn-text-main {
+        font-size: 11px;
+    }
+    .btn-text-sub {
+        font-size: 8px;
     }
 }
