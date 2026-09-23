@@ -138,10 +138,10 @@ body, html {
     border-left: 5px solid #2563EB;
 }
 
-/* --- Panel de KPIs Ejecutivos (Modificado para no superponer título) --- */
+/* --- Panel de KPIs Ejecutivos --- */
 #panel-kpis {
     position: absolute;
-    top: 70px; /* Bajado para alinear con el panel de filtros y liberar el título */
+    top: 70px; 
     right: 15px;
     z-index: 1000;
     display: flex;
@@ -292,15 +292,11 @@ body, html {
 }
 
 @keyframes destello-amarillo-pastel {
-    from { 
-        filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); 
-    }
-    to { 
-        filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.9)); 
-    }
+    from { filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); }
+    to { filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.9)); }
 }
 
-/* --- Responsividad Móvil Optimizada (NUEVO DISEÑO CELULAR) --- */
+/* --- Responsividad Móvil Optimizada --- */
 @media (max-width: 768px) {
     #titulo-flotante {
         position: static;
@@ -310,24 +306,22 @@ body, html {
         width: fit-content;
     }
     
-    /* 1. Panel KPIs en una sola fila pegados al fondo */
     #panel-kpis {
         top: auto;
         bottom: 10px; 
         right: 50%;
         transform: translateX(50%);
-        flex-wrap: nowrap; /* Fuerza a mantenerse en 1 sola fila */
+        flex-wrap: nowrap; 
         justify-content: space-between;
         width: 96%;
         gap: 2px;
         overflow-x: auto;
     }
     
-    /* 2. Tarjetas KPI reducidas y proporcionales para encajar */
     .kpi-card {
         padding: 5px 2px;
         min-width: 0;
-        flex: 1; /* Distribuye el espacio equitativamente */
+        flex: 1; 
         margin: 0 2px;
     }
     .kpi-title {
@@ -335,20 +329,65 @@ body, html {
         margin-bottom: 2px;
         letter-spacing: 0; 
     }
-    .kpi-value {
-        font-size: 14px;
-    }
+    .kpi-value { font-size: 14px; }
 
-    /* 3. Botón WhatsApp por encima de los KPIs */
     .btn-float {
         bottom: 75px; 
         right: 15px;
         padding: 8px 16px;
     }
-    .btn-text-main {
-        font-size: 11px;
-    }
-    .btn-text-sub {
-        font-size: 8px;
-    }
+    .btn-text-main { font-size: 11px; }
+    .btn-text-sub { font-size: 8px; }
+}
+
+/* --- ESTILOS DE LA BÓVEDA DE SEGURIDAD (INTEGRADO) --- */
+#pantalla-bloqueo {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+    background: linear-gradient(135deg, #1a252f, #2c3e50);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+
+.tarjeta-login {
+    background: #ffffff; padding: 40px 30px; border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center;
+    max-width: 90%; width: 340px; box-sizing: border-box;
+    border-top: 5px solid #25D366;
+}
+
+.tarjeta-login h2 { margin: 0 0 5px 0; color: #2c3e50; font-weight: 800; font-size: 22px; }
+.tarjeta-login p { font-size: 13px; color: #7f8c8d; margin-bottom: 25px; font-weight: 500; }
+
+.grupo-input { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+.grupo-input input { 
+    padding: 12px; border: 1px solid #dcdde1; border-radius: 8px; 
+    font-size: 13px; font-family: inherit; outline: none; 
+    transition: border-color 0.2s; color: #2c3e50;
+}
+.grupo-input input:focus { border-color: #34495e; }
+
+.btn-corporativo { 
+    background: #2c3e50; color: white; border: none; padding: 12px; 
+    border-radius: 8px; font-weight: 700; cursor: pointer; 
+    transition: background 0.2s; font-size: 13px; margin-top: 5px;
+}
+.btn-corporativo:hover { background: #1a252f; }
+
+.divisor { display: flex; align-items: center; text-align: center; margin: 15px 0; color: #95a5a6; font-size: 12px; font-weight: 600; }
+.divisor::before, .divisor::after { content: ''; flex: 1; border-bottom: 1px solid #e1e2e6; }
+.divisor span { padding: 0 10px; }
+
+.btn-google {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; background: #ffffff; border: 1px solid #dcdde1;
+    padding: 12px; border-radius: 8px; cursor: pointer;
+    font-weight: 700; color: #34495e; font-size: 13px;
+    transition: all 0.2s ease;
+}
+.btn-google:hover { background: #f4f4f9; border-color: #bdc3c7; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.btn-google svg { width: 18px; }
+
+#mensaje-error {
+    margin-top: 15px; font-size: 12px; color: #e74c3c; font-weight: 700;
+    display: none; padding: 8px; background: rgba(231, 76, 60, 0.1); border-radius: 6px;
 }
