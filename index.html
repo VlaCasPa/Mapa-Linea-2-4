@@ -12,67 +12,101 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Título Flotante Superior -->
-    <div id="titulo-flotante">Permisos de Obra - Línea 2 y Ramal L4</div>
 
-    <!-- Panel de KPIs Ejecutivos (5 Tarjetas) -->
-    <div id="panel-kpis">
-        <div class="kpi-card kpi-critico">
-            <span class="kpi-title">Críticos</span>
-            <span class="kpi-value" id="kpi-rojo">0</span>
-        </div>
-        <div class="kpi-card kpi-por-vencer">
-            <span class="kpi-title">&lt; 4 Meses</span>
-            <span class="kpi-value" id="kpi-amarillo">0</span>
-        </div>
-        <div class="kpi-card kpi-ley">
-            <span class="kpi-title">Ley 31955</span>
-            <span class="kpi-value" id="kpi-naranja">0</span>
-        </div>
-        <div class="kpi-card kpi-tramite">
-            <span class="kpi-title">En Trámite</span>
-            <span class="kpi-value" id="kpi-morado">0</span>
-        </div>
-        <div class="kpi-card kpi-culminado">
-            <span class="kpi-title">Culminadas</span>
-            <span class="kpi-value" id="kpi-verde">0</span>
+    <!-- BÓVEDA DE SEGURIDAD -->
+    <div id="pantalla-bloqueo">
+        <div class="tarjeta-login">
+            <h2>Línea 2 del Metro</h2>
+            <p>Control de Permisos de Obra</p>
+            
+            <!-- Acceso Corporativo -->
+            <div class="grupo-input">
+                <input type="email" id="email-corp" placeholder="Correo (@ccmetrolima.com)">
+                <input type="password" id="pass-corp" placeholder="Contraseña">
+                <button id="btn-login-corp" class="btn-corporativo">Ingresar al Sistema</button>
+            </div>
+
+            <div class="divisor"><span>O</span></div>
+
+            <!-- Acceso Externos/Administrador -->
+            <button id="btn-login-google" class="btn-google">
+                <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Ingresar con Google
+            </button>
+            
+            <div id="mensaje-error"></div>
         </div>
     </div>
 
-    <!-- Panel de Filtros y Leyenda -->
-    <div id="panel-filtros">
-        <div class="filtro-seccion">
-            <span class="filtro-label">FILTRAR POR ESTRUCTURA</span>
-            <div class="filtro-scroll" id="contenedor-filtros-id">
-                <button class="btn-pill active" data-id="Todos">Todos</button>
+    <!-- CONTENEDOR PRINCIPAL DE LA APLICACIÓN -->
+    <div id="app-principal" style="display: none;">
+        <!-- Título Flotante Superior -->
+        <div id="titulo-flotante">Permisos de Obra - Línea 2 y Ramal L4</div>
+
+        <!-- Panel de KPIs Ejecutivos (5 Tarjetas) -->
+        <div id="panel-kpis">
+            <div class="kpi-card kpi-critico">
+                <span class="kpi-title">Críticos</span>
+                <span class="kpi-value" id="kpi-rojo">0</span>
+            </div>
+            <div class="kpi-card kpi-por-vencer">
+                <span class="kpi-title">&lt; 4 Meses</span>
+                <span class="kpi-value" id="kpi-amarillo">0</span>
+            </div>
+            <div class="kpi-card kpi-ley">
+                <span class="kpi-title">Ley 31955</span>
+                <span class="kpi-value" id="kpi-naranja">0</span>
+            </div>
+            <div class="kpi-card kpi-tramite">
+                <span class="kpi-title">En Trámite</span>
+                <span class="kpi-value" id="kpi-morado">0</span>
+            </div>
+            <div class="kpi-card kpi-culminado">
+                <span class="kpi-title">Culminadas</span>
+                <span class="kpi-value" id="kpi-verde">0</span>
             </div>
         </div>
+
+        <!-- Panel de Filtros y Leyenda -->
+        <div id="panel-filtros">
+            <div class="filtro-seccion">
+                <span class="filtro-label">FILTRAR POR ESTRUCTURA</span>
+                <div class="filtro-scroll" id="contenedor-filtros-id">
+                    <button class="btn-pill active" data-id="Todos">Todos</button>
+                </div>
+            </div>
+            
+            <div class="filtro-seccion">
+                <span class="filtro-label">LEYENDA Y ESTADO</span>
+                <div class="filtro-scroll">
+                    <button class="btn-pill active" data-estado="Todos">Mostrar Todos</button>
+                    <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Críticas/Vencidas</button>
+                    <button class="btn-pill btn-meses" data-estado="Menor4Meses">🟡 &lt; 4 Meses</button>
+                    <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
+                    <button class="btn-pill btn-culminado" data-estado="Culminado">🟢 Culminadas</button>
+                    <button class="btn-pill btn-ley" data-estado="Ley31955">🟠 Ley N° 31955</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedor del Mapa -->
+        <div id="map"></div>
         
-        <div class="filtro-seccion">
-            <span class="filtro-label">LEYENDA Y ESTADO</span>
-            <div class="filtro-scroll">
-                <button class="btn-pill active" data-estado="Todos">Mostrar Todos</button>
-                <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Críticas/Vencidas</button>
-                <button class="btn-pill btn-meses" data-estado="Menor4Meses">🟡 &lt; 4 Meses</button>
-                <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
-                <button class="btn-pill btn-culminado" data-estado="Culminado">🟢 Culminadas</button>
-                <button class="btn-pill btn-ley" data-estado="Ley31955">🟠 Ley N° 31955</button>
-            </div>
-        </div>
+        <!-- Botón Flotante WhatsApp con Firma -->
+        <button id="btn-whatsapp" class="btn-float" title="Copiar reporte resumen">
+            <span class="btn-text-main">📋 Reporte WhatsApp</span>
+            <span class="btn-text-sub">diseñado por Vladimir Casas</span>
+        </button>
     </div>
 
-    <!-- Contenedor del Mapa -->
-    <div id="map"></div>
-    
-    <!-- Botón Flotante WhatsApp con Firma -->
-    <button id="btn-whatsapp" class="btn-float" title="Copiar reporte resumen">
-        <span class="btn-text-main">📋 Reporte WhatsApp</span>
-        <span class="btn-text-sub">diseñado por Vladimir Casas</span>
-    </button>
-
-    <!-- Librerías JS y Script principal -->
+    <!-- Librerías JS y Script principal (AHORA COMO MÓDULO) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
