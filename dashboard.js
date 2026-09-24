@@ -18,7 +18,7 @@ const CORREOS_MAESTROS = ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnorie
 const DOMINIO_PERMITIDO = "@ccmetrolima.com";
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// Registro del Plugin de Porcentajes para Chart.js
+// Registro Global del Plugin de Etiquetas
 Chart.register(ChartDataLabels);
 
 onAuthStateChanged(auth, (user) => {
@@ -55,7 +55,7 @@ function procesarDatosGerenciales() {
             const conteoEstados = { optimo: 0, tramite: 0, critico: 0, vencido: 0 };
             const conteoMuniTipo = {}; 
             const conteoProvincias = { 'Lima': 0, 'Callao': 0 };
-            const rankingTramites = []; // Arreglo para el nuevo gráfico
+            const rankingTramites = []; 
 
             datos.forEach(item => {
                 if (!item.ID) return;
@@ -73,7 +73,7 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
     if (!diasStr && diasStr !== 0) return;
     let d = diasStr.toString().trim().toLowerCase();
     
-    // Captura de datos para el ranking de Trámites
+    // Captura de datos para el Ranking de Trámites (Gráfico 3)
     if (d === 'en trámite') {
         conteoEstados.tramite++;
         let colDiasTramite = tipo === 'Obra' ? item.Dias_Tramite_Obra : item.Dias_Tramite_Desvio;
@@ -164,20 +164,40 @@ function renderizarTabla(matriz) {
 
 function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites) {
     
-    // Configuración universal para etiquetas de porcentajes
-    const pluginPorcentajes = {
+    // 1. Configurador para Gráficos Circulares (Cantidad y Porcentaje Multilínea)
+    const pluginCircular = {
         color: '#ffffff',
-        font: { weight: 'bold', size: 14 },
+        font: { weight: 'bold', size: 12 },
+        textAlign: 'center',
         formatter: (value, ctx) => {
             let sum = 0;
-            let dataArr = ctx.chart.data.datasets[0].data;
-            dataArr.map(data => { sum += data; });
-            if (sum === 0 || value === 0) return null; // Ocultar si es 0
-            return (value * 100 / sum).toFixed(1) + "%";
+            ctx.chart.data.datasets[0].data.map(data => { sum += data; });
+            if (sum === 0 || value === 0) return null; 
+            let pct = (value * 100 / sum).toFixed(1) + "%";
+            return [value, pct]; // Retorna Arreglo para forzar salto de línea
         }
     };
 
-    // 1. Salud General
+    // 2. Configurador para Gráfico de Cuellos de Botella (Flotante arriba de la barra)
+    const pluginBarras = {
+        color: '#475569',
+        font: { weight: 'bold', size: 10 },
+        textAlign: 'center',
+        anchor: 'end',
+        align: 'top',
+        formatter: (value, ctx) => {
+            if (value === 0) return null;
+            let total = 0;
+            // Suma de ambas barras (Obra + Tránsito) para el 100% de expedientes estancados
+            ctx.chart.data.datasets.forEach(ds => {
+                ds.data.forEach(v => { total += v; });
+            });
+            if (total === 0) return null;
+            let pct = (value * 100 / total).toFixed(1) + "%";
+            return [value, pct];
+        }
+    };
+
     const ctxEstado = document.getElementById('chartEstadoGeneral').getContext('2d');
     new Chart(ctxEstado, {
         type: 'doughnut',
@@ -190,11 +210,10 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         },
         options: { 
             responsive: true, maintainAspectRatio: false, cutout: '65%', 
-            plugins: { legend: { position: 'bottom' }, datalabels: pluginPorcentajes } 
+            plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } 
         }
     });
 
-    // 2. Lima vs Callao
     const ctxProv = document.getElementById('chartProvincias').getContext('2d');
     new Chart(ctxProv, {
         type: 'pie',
@@ -207,13 +226,12 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         },
         options: { 
             responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'bottom' }, datalabels: pluginPorcentajes } 
+            plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } 
         }
     });
 
-    // 3. Nuevo Gráfico: Ranking de Días en Trámite
-    rankingTramites.sort((a, b) => b.dias - a.dias); // Ordenamiento Descendente
-    const topTramites = rankingTramites.slice(0, 10); // Mostrar los 10 con más demoras
+    rankingTramites.sort((a, b) => b.dias - a.dias); 
+    const topTramites = rankingTramites.slice(0, 10); 
     const etiquetasTramites = topTramites.map(t => t.etiqueta);
     const dataTramites = topTramites.map(t => t.dias);
 
@@ -223,25 +241,31 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         data: {
             labels: etiquetasTramites,
             datasets: [{
-                label: 'Días ingresado en la Municipalidad',
+                label: 'Días en la Municipalidad',
                 data: dataTramites,
                 backgroundColor: '#f59e0b',
                 borderRadius: 4
             }]
         },
         options: { 
-            indexAxis: 'y', // Convertir a barras horizontales
+            indexAxis: 'y', 
             responsive: true, 
             maintainAspectRatio: false, 
+            layout: { padding: { right: 45 } }, // Protege la etiqueta para que no se corte
             scales: { x: { beginAtZero: true } }, 
             plugins: { 
                 legend: { display: false },
-                datalabels: { color: '#000', align: 'right', anchor: 'end', formatter: (value) => value > 0 ? value : '' }
+                datalabels: { 
+                    color: '#475569', 
+                    font: { weight: 'bold', size: 11 },
+                    align: 'right', 
+                    anchor: 'end', 
+                    formatter: (value) => value > 0 ? value + " días" : '' 
+                }
             } 
         }
     });
 
-    // 4. Cuellos de Botella Agrupados
     const ctxMuni = document.getElementById('chartMunicipalidades').getContext('2d');
     const etiquetasMuni = Object.keys(conteoMuniTipo);
     const dataObra = etiquetasMuni.map(muni => conteoMuniTipo[muni].obra);
@@ -259,10 +283,11 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
+            layout: { padding: { top: 35 } }, // Espacio superior para que el array de etiquetas no se ampute
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, 
             plugins: { 
                 legend: { position: 'bottom' },
-                datalabels: { display: false } // Se apagan para evitar saturación visual en barras verticales
+                datalabels: pluginBarras
             } 
         }
     });
