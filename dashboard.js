@@ -18,7 +18,6 @@ const CORREOS_MAESTROS = ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnorie
 const DOMINIO_PERMITIDO = "@ccmetrolima.com";
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// Registro Global del Plugin de Etiquetas
 Chart.register(ChartDataLabels);
 
 onAuthStateChanged(auth, (user) => {
@@ -38,9 +37,7 @@ onAuthStateChanged(auth, (user) => {
 
 function obtenerProvincia(muni) {
     let m = (muni || '').toLowerCase();
-    if (m.includes('callao') || m.includes('bellavista') || m.includes('carmen de la legua') || m.includes('perla')) {
-        return 'Callao';
-    }
+    if (m.includes('callao') || m.includes('bellavista') || m.includes('carmen de la legua') || m.includes('perla')) return 'Callao';
     return 'Lima';
 }
 
@@ -51,7 +48,6 @@ function procesarDatosGerenciales() {
         complete: function(results) {
             const datos = results.data;
             const matrizRiesgos = [];
-            
             const conteoEstados = { optimo: 0, tramite: 0, critico: 0, vencido: 0 };
             const conteoMuniTipo = {}; 
             const conteoProvincias = { 'Lima': 0, 'Callao': 0 };
@@ -73,14 +69,14 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
     if (!diasStr && diasStr !== 0) return;
     let d = diasStr.toString().trim().toLowerCase();
     
-    // Captura de datos para el Ranking de Trámites (Gráfico 3)
     if (d === 'en trámite') {
         conteoEstados.tramite++;
         let colDiasTramite = tipo === 'Obra' ? item.Dias_Tramite_Obra : item.Dias_Tramite_Desvio;
-        let diasIngresado = parseInt(colDiasTramite) || 0;
+        let diasIngresado = parseInt(colDiasTramite);
+        if (isNaN(diasIngresado)) diasIngresado = 0; 
         
         rankingTramites.push({
-            etiqueta: `${item.ID} (${tipo === 'Obra' ? 'Obra' : 'Tránsito'})`,
+            etiqueta: `${item.ID} (${tipo})`,
             dias: diasIngresado
         });
         return; 
@@ -114,12 +110,17 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
     if (esRiesgoActivo) {
         let muni = item.Municipalidad ? item.Municipalidad.trim() : 'Desconocida';
         let prov = obtenerProvincia(muni);
-        
         conteoProvincias[prov]++;
 
-        if (!conteoMuniTipo[muni]) conteoMuniTipo[muni] = { obra: 0, transito: 0 };
-        if (tipo === 'Obra') conteoMuniTipo[muni].obra++;
-        else conteoMuniTipo[muni].transito++;
+        // Recolección de IDs para la Leyenda Inferior
+        if (!conteoMuniTipo[muni]) conteoMuniTipo[muni] = { obra: 0, transito: 0, idsObra: [], idsTransito: [] };
+        if (tipo === 'Obra') {
+            conteoMuniTipo[muni].obra++;
+            conteoMuniTipo[muni].idsObra.push(item.ID);
+        } else {
+            conteoMuniTipo[muni].transito++;
+            conteoMuniTipo[muni].idsTransito.push(item.ID);
+        }
     }
 
     let claseFila = tipo === 'Obra' ? 'row-obra' : 'row-transito';
@@ -164,7 +165,6 @@ function renderizarTabla(matriz) {
 
 function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites) {
     
-    // 1. Configurador para Gráficos Circulares (Cantidad y Porcentaje Multilínea)
     const pluginCircular = {
         color: '#ffffff',
         font: { weight: 'bold', size: 12 },
@@ -174,11 +174,10 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
             ctx.chart.data.datasets[0].data.map(data => { sum += data; });
             if (sum === 0 || value === 0) return null; 
             let pct = (value * 100 / sum).toFixed(1) + "%";
-            return [value, pct]; // Retorna Arreglo para forzar salto de línea
+            return [value, pct]; 
         }
     };
 
-    // 2. Configurador para Gráfico de Cuellos de Botella (Flotante arriba de la barra)
     const pluginBarras = {
         color: '#475569',
         font: { weight: 'bold', size: 10 },
@@ -188,10 +187,7 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         formatter: (value, ctx) => {
             if (value === 0) return null;
             let total = 0;
-            // Suma de ambas barras (Obra + Tránsito) para el 100% de expedientes estancados
-            ctx.chart.data.datasets.forEach(ds => {
-                ds.data.forEach(v => { total += v; });
-            });
+            ctx.chart.data.datasets.forEach(ds => { ds.data.forEach(v => { total += v; }); });
             if (total === 0) return null;
             let pct = (value * 100 / total).toFixed(1) + "%";
             return [value, pct];
@@ -203,15 +199,9 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         type: 'doughnut',
         data: {
             labels: ['Óptimo', 'En Trámite', 'Críticos', 'Vencidos'],
-            datasets: [{
-                data: [conteoEstados.optimo, conteoEstados.tramite, conteoEstados.critico, conteoEstados.vencido],
-                backgroundColor: ['#10b981', '#a855f7', '#f97316', '#ef4444'], borderWidth: 0
-            }]
+            datasets: [{ data: [conteoEstados.optimo, conteoEstados.tramite, conteoEstados.critico, conteoEstados.vencido], backgroundColor: ['#10b981', '#a855f7', '#f97316', '#ef4444'], borderWidth: 0 }]
         },
-        options: { 
-            responsive: true, maintainAspectRatio: false, cutout: '65%', 
-            plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } }
     });
 
     const ctxProv = document.getElementById('chartProvincias').getContext('2d');
@@ -219,15 +209,9 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         type: 'pie',
         data: {
             labels: ['Lima', 'Callao'],
-            datasets: [{
-                data: [conteoProvincias.Lima, conteoProvincias.Callao],
-                backgroundColor: ['#0ea5e9', '#f43f5e'], borderWidth: 2, borderColor: '#ffffff'
-            }]
+            datasets: [{ data: [conteoProvincias.Lima, conteoProvincias.Callao], backgroundColor: ['#0ea5e9', '#f43f5e'], borderWidth: 2, borderColor: '#ffffff' }]
         },
-        options: { 
-            responsive: true, maintainAspectRatio: false, 
-            plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } 
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, datalabels: pluginCircular } }
     });
 
     rankingTramites.sort((a, b) => b.dias - a.dias); 
@@ -244,23 +228,24 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
                 label: 'Días en la Municipalidad',
                 data: dataTramites,
                 backgroundColor: '#f59e0b',
-                borderRadius: 4
+                borderRadius: 4,
+                minBarLength: 5 // Asegura que se vea al menos una pequeña barra aunque el valor sea 0
             }]
         },
         options: { 
             indexAxis: 'y', 
             responsive: true, 
             maintainAspectRatio: false, 
-            layout: { padding: { right: 45 } }, // Protege la etiqueta para que no se corte
+            layout: { padding: { right: 85 } }, 
             scales: { x: { beginAtZero: true } }, 
             plugins: { 
                 legend: { display: false },
                 datalabels: { 
                     color: '#475569', 
-                    font: { weight: 'bold', size: 11 },
+                    font: { weight: 'bold', size: 10 },
                     align: 'right', 
                     anchor: 'end', 
-                    formatter: (value) => value > 0 ? value + " días" : '' 
+                    formatter: (value) => value > 0 ? value + " días" : 'Falta en Excel' 
                 }
             } 
         }
@@ -283,12 +268,37 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, ran
         options: { 
             responsive: true, 
             maintainAspectRatio: false, 
-            layout: { padding: { top: 35 } }, // Espacio superior para que el array de etiquetas no se ampute
+            layout: { padding: { top: 35 } }, 
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, 
             plugins: { 
                 legend: { position: 'bottom' },
-                datalabels: pluginBarras
+                datalabels: pluginBarras,
+                // NUEVO: Tooltip enriquecido para mostrar IDs al pasar el mouse
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            let muni = context.label;
+                            let type = context.dataset.label;
+                            let ids = type === 'Obra' ? conteoMuniTipo[muni].idsObra : conteoMuniTipo[muni].idsTransito;
+                            return 'Estructuras: ' + (ids.length > 0 ? ids.join(', ') : 'Ninguna');
+                        }
+                    }
+                }
             } 
         }
     });
+
+    // Construcción de la Leyenda HTML (Debajo del Gráfico)
+    let leyendaHTML = '';
+    etiquetasMuni.forEach(muni => {
+        let idsO = conteoMuniTipo[muni].idsObra;
+        let idsT = conteoMuniTipo[muni].idsTransito;
+        if (idsO.length > 0 || idsT.length > 0) {
+            leyendaHTML += `<div><b>📍 ${muni}:</b> `;
+            if (idsO.length > 0) leyendaHTML += `<span class="tag-obra">Obra (${idsO.join(', ')})</span>. `;
+            if (idsT.length > 0) leyendaHTML += `<span class="tag-transito">Tránsito (${idsT.join(', ')})</span>.`;
+            leyendaHTML += `</div>`;
+        }
+    });
+    document.getElementById('leyenda-estructuras').innerHTML = leyendaHTML;
 }
