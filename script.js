@@ -228,19 +228,13 @@ function iniciarMotorDelMapa() {
             let fechaHoy = new Date().toLocaleDateString('es-PE');
             let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.length > 0 ? vencidos.join(', ') : 'Ninguno'}\n\n🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.length > 0 ? criticos.join(', ') : 'Ninguno'}\n\n🟡 *POR VENCER < 4 MESES (${menor4Meses.length}):*\n${menor4Meses.length > 0 ? menor4Meses.join(', ') : 'Ninguno'}\n\n🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.length > 0 ? tramite.join(', ') : 'Ninguno'}\n\n✅ *OBRAS CULMINADAS (${culminados.length}):*\n${culminados.length > 0 ? culminados.join(', ') : 'Ninguno'}\n\n⚖️ *AMPARO LEY N° 31955 (${ley31955.length}):*\n${ley31955.length > 0 ? ley31955.join(', ') : 'Ninguno'}\n\n🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
 
-            // Uso de la API moderna de Portapapeles con confirmación visual
             navigator.clipboard.writeText(texto).then(() => {
                 const originalHTML = btnReporte.innerHTML;
                 btnReporte.innerHTML = `<span class="btn-text-main">✅ ¡Copiado con éxito!</span><span class="btn-text-sub">pégalo donde necesites</span>`;
-                btnReporte.style.backgroundColor = '#10B981'; // Cambio a verde de éxito
-                
-                setTimeout(() => { 
-                    btnReporte.innerHTML = originalHTML; 
-                    btnReporte.style.backgroundColor = ''; 
-                }, 2500);
+                btnReporte.style.backgroundColor = '#10B981';
+                setTimeout(() => { btnReporte.innerHTML = originalHTML; btnReporte.style.backgroundColor = ''; }, 2500);
             }).catch(err => {
                 console.error("Fallo al copiar el texto: ", err);
-                // Respaldo de seguridad en caso el navegador restrinja la API
                 let textArea = document.createElement("textarea");
                 textArea.value = texto; document.body.appendChild(textArea); textArea.select();
                 document.execCommand('copy'); document.body.removeChild(textArea);
@@ -250,7 +244,7 @@ function iniciarMotorDelMapa() {
     }
 }
 
-// --- 3. MÓDULO NLP: CONSULTOR INTELIGENTE DE PERMISOS ---
+// --- 3. MÓDULO NLP (ACTUALIZADO PARA CONSULTAS AGREGADAS) ---
 function iniciarChatInteligente() {
     const chatWidget = document.getElementById('panel-chat');
     const btnToggle = document.getElementById('chat-header');
@@ -279,8 +273,56 @@ function iniciarChatInteligente() {
 
     const procesarConsulta = (textoConsulta) => {
         let txt = textoConsulta.toLowerCase().trim();
-        let estacionHallada = null;
 
+        // 3.1. Validar Consultas Agrupadas (Listados Generales)
+        if (txt.includes('por vencer') || txt.includes('4 meses') || txt.includes('vencer')) {
+            let lista = [];
+            window.datosGlobales.forEach(item => {
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                let dObra = parseInt(item.Aut_Obra_Dias_Restantes);
+                let dDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
+                let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
+                let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
+                let esMenor4 = ((!isNaN(dObra) && dObra >= 0 && dObra <= 120) || (!isNaN(dDesvio) && dDesvio >= 0 && dDesvio <= 120));
+                
+                if (esMenor4 && !esCulminado && !esVencido) lista.push(item.ID);
+            });
+            return lista.length > 0 ? `🟡 <b>Estructuras por vencer (< 4 meses):</b><br>${lista.join(', ')}` : `✅ No hay estructuras por vencer.`;
+        }
+
+        if (txt.includes('vencid') || txt.includes('critico') || txt.includes('crítico')) {
+            let lista = [];
+            window.datosGlobales.forEach(item => {
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') lista.push(item.ID);
+            });
+            return lista.length > 0 ? `🔴 <b>Estructuras Críticas o Vencidas:</b><br>${lista.join(', ')}` : `✅ No hay estructuras críticas ni vencidas.`;
+        }
+
+        if (txt.includes('tramite') || txt.includes('trámite')) {
+            let lista = [];
+            window.datosGlobales.forEach(item => {
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') lista.push(item.ID);
+            });
+            return lista.length > 0 ? `🟣 <b>Estructuras en trámite:</b><br>${lista.join(', ')}` : `No hay estructuras en trámite actualmente.`;
+        }
+
+        if (txt.includes('culminad')) {
+             let lista = [];
+            window.datosGlobales.forEach(item => {
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') lista.push(item.ID);
+            });
+            return lista.length > 0 ? `🟢 <b>Estructuras culminadas:</b><br>${lista.join(', ')}` : `No hay obras culminadas registradas.`;
+        }
+
+        // 3.2. Validar Consultas Individuales (Por Estación)
+        let estacionHallada = null;
         for (let item of window.datosGlobales) {
             if (item.ID) {
                 let idLimpio = item.ID.toLowerCase();
@@ -290,7 +332,7 @@ function iniciarChatInteligente() {
         }
 
         if (!estacionHallada) {
-            return "No he logrado identificar una estructura específica. Asegúrate de incluir su código exacto (Ej. 'E12' o 'PV19').";
+            return "No he logrado identificar una estructura específica. Asegúrate de incluir su código exacto (Ej. 'E12' o 'PV19'), o hazme una consulta general como '¿Cuáles están por vencer?'.";
         }
 
         let pideTransito = txt.includes('transito') || txt.includes('tránsito') || txt.includes('desvio') || txt.includes('desvío');
@@ -318,7 +360,7 @@ function iniciarChatInteligente() {
             setTimeout(() => {
                 let respuesta = procesarConsulta(texto);
                 agregarMensaje(respuesta, 'bot');
-            }, 400);
+            }, 400); // Simulador de latencia natural
         }
     };
 
