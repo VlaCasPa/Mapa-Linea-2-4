@@ -56,15 +56,16 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 .btn-culminado.active { background-color: #10B981; border-color: #10B981; color: white; }
 .btn-ley.active { background-color: #F97316; border-color: #F97316; color: white; } 
 
-.btn-float { position: absolute; bottom: 25px; right: 20px; z-index: 1000; background-color: #25D366; color: white; border: none; padding: 8px 18px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
-.btn-float:hover { background-color: #128C7E; transform: scale(1.05); }
+/* --- ESTILOS DEL BOTÓN DE REPORTE (MODIFICADO) --- */
+.btn-float { position: absolute; bottom: 25px; right: 20px; z-index: 1000; background-color: #2c3e50; color: white; border: none; padding: 10px 18px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.btn-float:hover { background-color: #1a252f; transform: scale(1.05); }
 .btn-text-main { font-size: 12px; font-weight: 700; }
 .btn-text-sub { font-size: 9px; font-weight: 400; opacity: 0.85; margin-top: 3px; letter-spacing: 0.3px; }
 
 .brillo-preventivo { animation: destello-amarillo-pastel 2s infinite alternate; }
 @keyframes destello-amarillo-pastel { from { filter: drop-shadow(0 0 2px rgba(253, 224, 71, 0.4)); } to { filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.9)); } }
 
-/* --- ASISTENTE DE CONSULTAS (CSS NUEVO) --- */
+/* --- ASISTENTE DE CONSULTAS --- */
 #panel-chat { position: absolute; bottom: 25px; left: 20px; z-index: 1000; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); width: 320px; max-width: 90vw; display: flex; flex-direction: column; transition: all 0.3s ease; border: 1px solid #e5e7eb; overflow: hidden; }
 #panel-chat.chat-minimizada { height: 45px; cursor: pointer; }
 #panel-chat.chat-minimizada:hover { background-color: #f9fafb; }
@@ -112,8 +113,6 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
     .btn-float { bottom: 75px; right: 15px; padding: 8px 16px; }
     .btn-text-main { font-size: 11px; }
     .btn-text-sub { font-size: 8px; }
-    
-    /* Reposicionar chat en móviles para no chocar con KPIs */
     #panel-chat { bottom: 75px; left: 15px; width: calc(100vw - 190px); }
     #panel-chat.chat-abierta { height: 320px; }
 }
