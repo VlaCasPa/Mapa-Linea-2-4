@@ -28,6 +28,10 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 
 #titulo-flotante { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; background-color: rgba(255, 255, 255, 0.95); padding: 10px 25px; border-radius: 8px; font-size: clamp(16px, 3.5vw, 22px); font-weight: 700; color: #111827; box-shadow: 0 4px 10px rgba(0,0,0,0.1); white-space: nowrap; border-left: 5px solid #2563EB; }
 
+/* --- BOTÓN DE NAVEGACIÓN MAPA/DASHBOARD --- */
+.btn-navegacion { position: absolute; top: 15px; right: 20px; z-index: 1000; background-color: #0f172a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: background 0.3s; font-size: 13px; display: flex; align-items: center; gap: 8px; border-left: 4px solid #3b82f6; }
+.btn-navegacion:hover { background-color: #1e293b; }
+
 #panel-kpis { position: absolute; top: 70px; right: 15px; z-index: 1000; display: flex; gap: 8px; }
 .kpi-card { background-color: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; min-width: 65px; border-top: 4px solid #d1d5db; }
 .kpi-title { display: block; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
@@ -109,36 +113,21 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 @media (max-width: 768px) {
     #titulo-flotante { position: static; transform: none; margin: 10px auto; text-align: center; width: fit-content; }
     
+    .btn-navegacion { top: 60px; right: 50%; transform: translateX(50%); padding: 8px 15px; font-size: 11px; width: max-content; }
+    
     #panel-kpis { top: auto; bottom: 10px; right: 50%; transform: translateX(50%); flex-wrap: nowrap; justify-content: space-between; width: 96%; gap: 2px; overflow-x: auto; }
     .kpi-card { padding: 5px 2px; min-width: 0; flex: 1; margin: 0 2px; }
     .kpi-title { font-size: 7px; margin-bottom: 2px; letter-spacing: 0; }
     .kpi-value { font-size: 14px; }
     
     /* Controles Inferiores Simétricos (Botón y Chat) */
-    .btn-float { 
-        bottom: 75px; 
-        right: 10px; 
-        width: calc(50vw - 15px); 
-        padding: 0; 
-    }
+    .btn-float { bottom: 75px; right: 10px; width: calc(50vw - 15px); padding: 0; }
     .btn-text-main { font-size: 11px; }
     .btn-text-sub { font-size: 8px; }
     
-    #panel-chat { 
-        bottom: 75px; 
-        left: 10px; 
-        width: calc(50vw - 15px); 
-    }
-    
-    #chat-header { 
-        padding: 0 10px; 
-        font-size: 11px; 
-    }
+    #panel-chat { bottom: 75px; left: 10px; width: calc(50vw - 15px); }
+    #chat-header { padding: 0 10px; font-size: 11px; }
     
     /* Expansión a pantalla completa al abrir el chat */
-    #panel-chat.chat-abierta { 
-        width: calc(100vw - 20px); 
-        height: 60vh; 
-        z-index: 1010; 
-    }
+    #panel-chat.chat-abierta { width: calc(100vw - 20px); height: 60vh; z-index: 1010; }
 }
