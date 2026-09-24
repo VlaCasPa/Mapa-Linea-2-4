@@ -36,23 +36,27 @@
         </nav>
 
         <div class="container-fluid py-4 px-4">
-            <!-- Fila de Gráficos Analíticos -->
             <div class="row g-4 mb-4">
+                <!-- Gráfico 1: Protegido con altura fija -->
                 <div class="col-lg-4">
                     <div class="card-custom">
                         <div class="card-title-custom">Curva de Salud del Proyecto</div>
-                        <canvas id="chartEstadoGeneral"></canvas>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="chartEstadoGeneral"></canvas>
+                        </div>
                     </div>
                 </div>
+                <!-- Gráfico 2: Protegido con altura fija -->
                 <div class="col-lg-8">
                     <div class="card-custom">
-                        <div class="card-title-custom">Cuellos de Botella Institucionales (Críticos y Vencidos)</div>
-                        <canvas id="chartMunicipalidades"></canvas>
+                        <div class="card-title-custom">Cuellos de Botella (&lt; 4 Meses, Críticos y Vencidos)</div>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="chartMunicipalidades"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Fila de la Matriz de Riesgos -->
             <div class="row">
                 <div class="col-12">
                     <div class="card-custom">
@@ -80,7 +84,6 @@
         </div>
     </div>
 
-    <!-- Scripts de Librerías -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
