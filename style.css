@@ -109,18 +109,19 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 .btn-google svg { width: 18px; }
 #mensaje-error { margin-top: 15px; font-size: 12px; color: #e74c3c; font-weight: 700; display: none; padding: 8px; background: rgba(231, 76, 60, 0.1); border-radius: 6px; }
 
-/* --- RESPONSIVIDAD MÓVIL OPTIMIZADA --- */
+/* --- RESPONSIVIDAD MÓVIL OPTIMIZADA (CORREGIDA) --- */
 @media (max-width: 768px) {
-    #titulo-flotante { position: static; transform: none; margin: 10px auto; text-align: center; width: fit-content; }
-    
-    .btn-navegacion { top: 60px; right: 50%; transform: translateX(50%); padding: 8px 15px; font-size: 11px; width: max-content; }
+    /* Apilamiento Vertical Superior Limpio */
+    #titulo-flotante { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; width: 90%; font-size: 13px; z-index: 1000; text-align: center; }
+    .btn-navegacion { position: absolute; top: 55px; left: 50%; transform: translateX(-50%); right: auto; padding: 8px 20px; font-size: 11px; width: max-content; z-index: 1000; }
+    #panel-filtros { position: absolute; top: 105px; left: 50%; transform: translateX(-50%); width: 95%; max-width: none; }
     
     #panel-kpis { top: auto; bottom: 10px; right: 50%; transform: translateX(50%); flex-wrap: nowrap; justify-content: space-between; width: 96%; gap: 2px; overflow-x: auto; }
     .kpi-card { padding: 5px 2px; min-width: 0; flex: 1; margin: 0 2px; }
     .kpi-title { font-size: 7px; margin-bottom: 2px; letter-spacing: 0; }
     .kpi-value { font-size: 14px; }
     
-    /* Controles Inferiores Simétricos (Botón y Chat) */
+    /* Controles Inferiores Simétricos */
     .btn-float { bottom: 75px; right: 10px; width: calc(50vw - 15px); padding: 0; }
     .btn-text-main { font-size: 11px; }
     .btn-text-sub { font-size: 8px; }
@@ -128,6 +129,5 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
     #panel-chat { bottom: 75px; left: 10px; width: calc(50vw - 15px); }
     #chat-header { padding: 0 10px; font-size: 11px; }
     
-    /* Expansión a pantalla completa al abrir el chat */
     #panel-chat.chat-abierta { width: calc(100vw - 20px); height: 60vh; z-index: 1010; }
 }
