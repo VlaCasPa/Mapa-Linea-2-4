@@ -14,10 +14,18 @@
         .top-navbar h1 { margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; }
         .btn-volver { background-color: #f1f5f9; color: #334155; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; transition: all 0.2s; border: 1px solid #cbd5e1; }
         .btn-volver:hover { background-color: #e2e8f0; color: #0f172a; }
-        .card-custom { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; height: 100%; }
-        .card-title-custom { font-size: 14px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        .card-custom { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; height: 100%; display: flex; flex-direction: column; }
+        .card-title-custom { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        
+        /* Estilos de la Tabla */
         .table-custom th { background-color: #f8fafc; font-size: 12px; color: #64748b; text-transform: uppercase; }
-        .table-custom td { font-size: 13px; vertical-align: middle; font-weight: 500; }
+        .table-custom td { font-size: 13px; vertical-align: middle; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
+        
+        /* Diferenciación visual Pastel (Obra vs Tránsito) */
+        table.dataTable tbody tr.row-obra td { background-color: rgba(59, 130, 246, 0.04) !important; }
+        table.dataTable tbody tr.row-transito td { background-color: rgba(168, 85, 247, 0.05) !important; }
+        table.dataTable tbody tr:hover td { filter: brightness(0.96); }
+
         .badge-riesgo { padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 11px; text-align: center; display: block; width: 100%; }
         .bg-vencido { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
         .bg-critico { background-color: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
@@ -36,33 +44,41 @@
         </nav>
 
         <div class="container-fluid py-4 px-4">
-            <div class="row g-4 mb-4">
-                <!-- Gráfico 1: Protegido con altura fija -->
-                <div class="col-lg-4">
+            <!-- Fila de Gráficos Analíticos (Tres Columnas) -->
+            <div class="row g-3 mb-4">
+                <div class="col-lg-3">
                     <div class="card-custom">
-                        <div class="card-title-custom">Curva de Salud del Proyecto</div>
-                        <div style="position: relative; height: 300px; width: 100%;">
+                        <div class="card-title-custom">Salud del Proyecto</div>
+                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
                             <canvas id="chartEstadoGeneral"></canvas>
                         </div>
                     </div>
                 </div>
-                <!-- Gráfico 2: Protegido con altura fija -->
-                <div class="col-lg-8">
+                <div class="col-lg-3">
                     <div class="card-custom">
-                        <div class="card-title-custom">Cuellos de Botella (&lt; 4 Meses, Críticos y Vencidos)</div>
-                        <div style="position: relative; height: 300px; width: 100%;">
+                        <div class="card-title-custom">Gestión: Lima vs Callao</div>
+                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
+                            <canvas id="chartProvincias"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card-custom">
+                        <div class="card-title-custom">Cuellos de Botella (Obra vs Tránsito)</div>
+                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
                             <canvas id="chartMunicipalidades"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Fila de la Matriz de Riesgos -->
             <div class="row">
                 <div class="col-12">
                     <div class="card-custom">
                         <div class="card-title-custom">Semáforo de Riesgos Cronológicos (Priorización Automática)</div>
                         <div class="table-responsive">
-                            <table id="tablaRiesgos" class="table table-hover table-custom w-100">
+                            <table id="tablaRiesgos" class="table table-custom w-100">
                                 <thead>
                                     <tr>
                                         <th>Estructura</th>
@@ -84,6 +100,7 @@
         </div>
     </div>
 
+    <!-- Scripts de Librerías -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
