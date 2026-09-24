@@ -47,10 +47,7 @@ function procesarDatosGerenciales() {
 
             datos.forEach(item => {
                 if (!item.ID) return;
-
-                // Evaluación Obra
                 evaluarPermiso(item, 'Obra', item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Resolucion, matrizRiesgos, conteoEstados, conteoMunicipalidades);
-                // Evaluación Desvío
                 evaluarPermiso(item, 'Desvío de Tránsito', item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Resolucion, matrizRiesgos, conteoEstados, conteoMunicipalidades);
             });
 
@@ -64,7 +61,6 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
     if (!diasStr && diasStr !== 0) return;
     let d = diasStr.toString().trim().toLowerCase();
     
-    // Filtramos lo que no representa riesgo inmediato
     if (d === 'culminada' || d === 'culminado' || d === 'exonerado' || d === 'indefinido') {
         conteoEstados.optimo++;
         return;
@@ -98,10 +94,11 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
         estadoCategoria = 'Alerta Temprana';
         claseBadge = 'bg-alerta';
         accion = 'Preparar expediente técnico';
-        conteoEstados.optimo++; // Se considera sano pero entra al radar
+        conteoEstados.optimo++; 
+        registrarMunicipalidad(conteoMunicipalidades, item.Municipalidad); // Agregado para robustecer el gráfico
     } else {
         conteoEstados.optimo++;
-        return; // Más de 4 meses, no entra al semáforo
+        return; 
     }
 
     matrizRiesgos.push({
@@ -138,9 +135,8 @@ function renderizarTabla(matriz) {
         tbody.appendChild(tr);
     });
 
-    // Inicializar DataTables con ordenamiento por la columna "Días Restantes" ascendente
     $('#tablaRiesgos').DataTable({
-        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' }, // Protocolo HTTPS forzado
         order: [[4, 'asc']],
         pageLength: 10,
         bLengthChange: false
@@ -148,7 +144,6 @@ function renderizarTabla(matriz) {
 }
 
 function renderizarGraficos(conteoEstados, conteoMunicipalidades) {
-    // 1. Gráfico de Anillo (Salud General)
     const ctxEstado = document.getElementById('chartEstadoGeneral').getContext('2d');
     new Chart(ctxEstado, {
         type: 'doughnut',
@@ -163,7 +158,6 @@ function renderizarGraficos(conteoEstados, conteoMunicipalidades) {
         options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } }
     });
 
-    // 2. Gráfico de Barras (Cuellos de Botella)
     const ctxMuni = document.getElementById('chartMunicipalidades').getContext('2d');
     const etiquetasMuni = Object.keys(conteoMunicipalidades);
     const dataMuni = Object.values(conteoMunicipalidades);
@@ -173,7 +167,7 @@ function renderizarGraficos(conteoEstados, conteoMunicipalidades) {
         data: {
             labels: etiquetasMuni,
             datasets: [{
-                label: 'Permisos en Riesgo',
+                label: 'Permisos en Riesgo o Próximos a Vencer',
                 data: dataMuni,
                 backgroundColor: '#3b82f6',
                 borderRadius: 4
