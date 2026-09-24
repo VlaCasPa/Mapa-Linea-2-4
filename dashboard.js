@@ -18,7 +18,9 @@ const CORREOS_MAESTROS = ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnorie
 const DOMINIO_PERMITIDO = "@ccmetrolima.com";
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// 1. VIGILANTE DE SEGURIDAD
+// Registro del Plugin de Porcentajes para Chart.js
+Chart.register(ChartDataLabels);
+
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const email = user.email.toLowerCase();
@@ -34,17 +36,14 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// 2. LÓGICA DE AGRUPACIÓN GEOGRÁFICA
 function obtenerProvincia(muni) {
     let m = (muni || '').toLowerCase();
-    // Diccionario rápido para el Callao
     if (m.includes('callao') || m.includes('bellavista') || m.includes('carmen de la legua') || m.includes('perla')) {
         return 'Callao';
     }
     return 'Lima';
 }
 
-// 3. PROCESAMIENTO DE MATRIZ DE RIESGOS
 function procesarDatosGerenciales() {
     Papa.parse(urlCSV, {
         download: true,
@@ -53,33 +52,42 @@ function procesarDatosGerenciales() {
             const datos = results.data;
             const matrizRiesgos = [];
             
-            // Variables para Gráficos
             const conteoEstados = { optimo: 0, tramite: 0, critico: 0, vencido: 0 };
-            const conteoMuniTipo = {}; // { 'Ate': { obra: 2, transito: 1 } }
+            const conteoMuniTipo = {}; 
             const conteoProvincias = { 'Lima': 0, 'Callao': 0 };
+            const rankingTramites = []; // Arreglo para el nuevo gráfico
 
             datos.forEach(item => {
                 if (!item.ID) return;
-                evaluarPermiso(item, 'Obra', item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias);
-                evaluarPermiso(item, 'Desvío de Tránsito', item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias);
+                evaluarPermiso(item, 'Obra', item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites);
+                evaluarPermiso(item, 'Desvío de Tránsito', item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites);
             });
 
             renderizarTabla(matrizRiesgos);
-            renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias);
+            renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites);
         }
     });
 }
 
-function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias) {
+function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites) {
     if (!diasStr && diasStr !== 0) return;
     let d = diasStr.toString().trim().toLowerCase();
     
-    // Filtros de Exclusión (Sanos)
+    // Captura de datos para el ranking de Trámites
+    if (d === 'en trámite') {
+        conteoEstados.tramite++;
+        let colDiasTramite = tipo === 'Obra' ? item.Dias_Tramite_Obra : item.Dias_Tramite_Desvio;
+        let diasIngresado = parseInt(colDiasTramite) || 0;
+        
+        rankingTramites.push({
+            etiqueta: `${item.ID} (${tipo === 'Obra' ? 'Obra' : 'Tránsito'})`,
+            dias: diasIngresado
+        });
+        return; 
+    }
+
     if (d === 'culminada' || d === 'culminado' || d === 'exonerado' || d === 'indefinido') {
         conteoEstados.optimo++; return;
-    }
-    if (d === 'en trámite') {
-        conteoEstados.tramite++; return; 
     }
 
     let diasNum = parseInt(diasStr);
@@ -103,21 +111,17 @@ function evaluarPermiso(item, tipo, diasStr, resolucion, matrizRiesgos, conteoEs
         conteoEstados.optimo++; return; 
     }
 
-    // Llenado de métricas (Solo si entra al semáforo)
     if (esRiesgoActivo) {
         let muni = item.Municipalidad ? item.Municipalidad.trim() : 'Desconocida';
         let prov = obtenerProvincia(muni);
         
-        // Asignación Provincial
         conteoProvincias[prov]++;
 
-        // Asignación por Muni y Tipo
         if (!conteoMuniTipo[muni]) conteoMuniTipo[muni] = { obra: 0, transito: 0 };
         if (tipo === 'Obra') conteoMuniTipo[muni].obra++;
         else conteoMuniTipo[muni].transito++;
     }
 
-    // Identificador para el CSS Pastel
     let claseFila = tipo === 'Obra' ? 'row-obra' : 'row-transito';
 
     matrizRiesgos.push({
@@ -138,7 +142,7 @@ function renderizarTabla(matriz) {
 
     matriz.forEach(fila => {
         const tr = document.createElement('tr');
-        tr.className = fila.claseFila; // Aplica el color pastel (Azul o Morado)
+        tr.className = fila.claseFila; 
         tr.innerHTML = `
             <td><b>${fila.id}</b></td>
             <td>${fila.municipalidad}</td>
@@ -158,7 +162,21 @@ function renderizarTabla(matriz) {
     });
 }
 
-function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias) {
+function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias, rankingTramites) {
+    
+    // Configuración universal para etiquetas de porcentajes
+    const pluginPorcentajes = {
+        color: '#ffffff',
+        font: { weight: 'bold', size: 14 },
+        formatter: (value, ctx) => {
+            let sum = 0;
+            let dataArr = ctx.chart.data.datasets[0].data;
+            dataArr.map(data => { sum += data; });
+            if (sum === 0 || value === 0) return null; // Ocultar si es 0
+            return (value * 100 / sum).toFixed(1) + "%";
+        }
+    };
+
     // 1. Salud General
     const ctxEstado = document.getElementById('chartEstadoGeneral').getContext('2d');
     new Chart(ctxEstado, {
@@ -170,7 +188,10 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias) {
                 backgroundColor: ['#10b981', '#a855f7', '#f97316', '#ef4444'], borderWidth: 0
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom' } } }
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '65%', 
+            plugins: { legend: { position: 'bottom' }, datalabels: pluginPorcentajes } 
+        }
     });
 
     // 2. Lima vs Callao
@@ -184,10 +205,43 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias) {
                 backgroundColor: ['#0ea5e9', '#f43f5e'], borderWidth: 2, borderColor: '#ffffff'
             }]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { position: 'bottom' }, datalabels: pluginPorcentajes } 
+        }
     });
 
-    // 3. Cuellos de Botella Agrupados (Obra vs Tránsito)
+    // 3. Nuevo Gráfico: Ranking de Días en Trámite
+    rankingTramites.sort((a, b) => b.dias - a.dias); // Ordenamiento Descendente
+    const topTramites = rankingTramites.slice(0, 10); // Mostrar los 10 con más demoras
+    const etiquetasTramites = topTramites.map(t => t.etiqueta);
+    const dataTramites = topTramites.map(t => t.dias);
+
+    const ctxRanking = document.getElementById('chartRankingTramites').getContext('2d');
+    new Chart(ctxRanking, {
+        type: 'bar',
+        data: {
+            labels: etiquetasTramites,
+            datasets: [{
+                label: 'Días ingresado en la Municipalidad',
+                data: dataTramites,
+                backgroundColor: '#f59e0b',
+                borderRadius: 4
+            }]
+        },
+        options: { 
+            indexAxis: 'y', // Convertir a barras horizontales
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { x: { beginAtZero: true } }, 
+            plugins: { 
+                legend: { display: false },
+                datalabels: { color: '#000', align: 'right', anchor: 'end', formatter: (value) => value > 0 ? value : '' }
+            } 
+        }
+    });
+
+    // 4. Cuellos de Botella Agrupados
     const ctxMuni = document.getElementById('chartMunicipalidades').getContext('2d');
     const etiquetasMuni = Object.keys(conteoMuniTipo);
     const dataObra = etiquetasMuni.map(muni => conteoMuniTipo[muni].obra);
@@ -206,7 +260,10 @@ function renderizarGraficos(conteoEstados, conteoMuniTipo, conteoProvincias) {
             responsive: true, 
             maintainAspectRatio: false, 
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, 
-            plugins: { legend: { position: 'bottom' } } 
+            plugins: { 
+                legend: { position: 'bottom' },
+                datalabels: { display: false } // Se apagan para evitar saturación visual en barras verticales
+            } 
         }
     });
 }
