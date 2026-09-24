@@ -17,7 +17,6 @@
         .card-custom { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; height: 100%; display: flex; flex-direction: column; }
         .card-title-custom { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
         
-        /* Estilos de la Tabla */
         .table-custom th { background-color: #f8fafc; font-size: 12px; color: #64748b; text-transform: uppercase; }
         .table-custom td { font-size: 13px; vertical-align: middle; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
         table.dataTable tbody tr.row-obra td { background-color: rgba(59, 130, 246, 0.04) !important; }
@@ -28,7 +27,13 @@
         .bg-vencido { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
         .bg-critico { background-color: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
         .bg-alerta { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+        
         #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; font-weight: 700; color: #2563EB; }
+        
+        /* Estilos para la leyenda de estructuras */
+        #leyenda-estructuras { font-size: 11px; color: #475569; margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 12px; line-height: 1.6; }
+        .tag-obra { color: #2563eb; font-weight: 700; }
+        .tag-transito { color: #9333ea; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -43,7 +48,6 @@
 
         <div class="container-fluid py-4 px-4">
             
-            <!-- Fila 1: KPIs Circulares y Ranking de Trámites -->
             <div class="row g-3 mb-4">
                 <div class="col-lg-4">
                     <div class="card-custom">
@@ -71,7 +75,6 @@
                 </div>
             </div>
 
-            <!-- Fila 2: Cuellos de Botella (Ancho Completo) -->
             <div class="row g-3 mb-4">
                 <div class="col-12">
                     <div class="card-custom">
@@ -79,11 +82,12 @@
                         <div style="position: relative; height: 300px; width: 100%;">
                             <canvas id="chartMunicipalidades"></canvas>
                         </div>
+                        <!-- NUEVO: Contenedor para mostrar los IDs debajo de la gráfica -->
+                        <div id="leyenda-estructuras"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Fila 3: Matriz de Riesgos -->
             <div class="row">
                 <div class="col-12">
                     <div class="card-custom">
