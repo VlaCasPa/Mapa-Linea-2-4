@@ -193,13 +193,14 @@ function iniciarMotorDelMapa() {
 
             aplicarFiltros(); 
             actualizarKPIs(); 
-            iniciarChatInteligente(); // Habilitar el módulo NLP una vez descargada la matriz
+            iniciarChatInteligente(); 
         }
     });
 
-    let btnWhatsapp = document.getElementById('btn-whatsapp');
-    if (btnWhatsapp) {
-        btnWhatsapp.addEventListener('click', () => {
+    // --- FUNCIONALIDAD DE COPIADO AL PORTAPAPELES ---
+    let btnReporte = document.getElementById('btn-reporte');
+    if (btnReporte) {
+        btnReporte.addEventListener('click', () => {
             if (!window.datosGlobales || window.datosGlobales.length === 0) return alert("Los datos aún se están cargando...");
             let vencidos = [], criticos = [], menor4Meses = [], tramite = [], culminados = [], ley31955 = []; 
 
@@ -227,12 +228,24 @@ function iniciarMotorDelMapa() {
             let fechaHoy = new Date().toLocaleDateString('es-PE');
             let texto = `📊 *REPORTE AUTORIZACIONES - LÍNEA 2 Y RAMAL L4* 🚇\n📅 Fecha: ${fechaHoy}\n\n🔴 *VENCIDOS (${vencidos.length}):*\n${vencidos.length > 0 ? vencidos.join(', ') : 'Ninguno'}\n\n🟠 *CRÍTICOS <29 DÍAS (${criticos.length}):*\n${criticos.length > 0 ? criticos.join(', ') : 'Ninguno'}\n\n🟡 *POR VENCER < 4 MESES (${menor4Meses.length}):*\n${menor4Meses.length > 0 ? menor4Meses.join(', ') : 'Ninguno'}\n\n🟣 *EN TRÁMITE (${tramite.length}):*\n${tramite.length > 0 ? tramite.join(', ') : 'Ninguno'}\n\n✅ *OBRAS CULMINADAS (${culminados.length}):*\n${culminados.length > 0 ? culminados.join(', ') : 'Ninguno'}\n\n⚖️ *AMPARO LEY N° 31955 (${ley31955.length}):*\n${ley31955.length > 0 ? ley31955.join(', ') : 'Ninguno'}\n\n🔗 *Ver mapa interactivo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
 
-            try {
+            // Uso de la API moderna de Portapapeles con confirmación visual
+            navigator.clipboard.writeText(texto).then(() => {
+                const originalHTML = btnReporte.innerHTML;
+                btnReporte.innerHTML = `<span class="btn-text-main">✅ ¡Copiado con éxito!</span><span class="btn-text-sub">pégalo donde necesites</span>`;
+                btnReporte.style.backgroundColor = '#10B981'; // Cambio a verde de éxito
+                
+                setTimeout(() => { 
+                    btnReporte.innerHTML = originalHTML; 
+                    btnReporte.style.backgroundColor = ''; 
+                }, 2500);
+            }).catch(err => {
+                console.error("Fallo al copiar el texto: ", err);
+                // Respaldo de seguridad en caso el navegador restrinja la API
                 let textArea = document.createElement("textarea");
                 textArea.value = texto; document.body.appendChild(textArea); textArea.select();
                 document.execCommand('copy'); document.body.removeChild(textArea);
-            } catch (err) { console.error("No se pudo copiar automáticamente"); }
-            window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(texto), '_blank');
+                alert("Reporte copiado. Puede pegarlo donde necesite.");
+            });
         });
     }
 }
@@ -277,7 +290,7 @@ function iniciarChatInteligente() {
         }
 
         if (!estacionHallada) {
-            return "No he logrado identificar una estación específica. Asegúrate de incluir su código exacto (Ej. 'E12' o 'PV19').";
+            return "No he logrado identificar una estructura específica. Asegúrate de incluir su código exacto (Ej. 'E12' o 'PV19').";
         }
 
         let pideTransito = txt.includes('transito') || txt.includes('tránsito') || txt.includes('desvio') || txt.includes('desvío');
