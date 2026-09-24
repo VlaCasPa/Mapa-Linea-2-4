@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 // --- 1. CREDENCIALES Y AUTENTICACIÓN FIREBASE ---
 const firebaseConfig = {
@@ -14,7 +15,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app); 
 const provider = new GoogleAuthProvider();
+let usuarioActual = "anonimo"; 
 
 const CORREOS_MAESTROS = [
     "zebaxx@gmail.com", 
@@ -66,6 +69,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const email = user.email.toLowerCase();
+        usuarioActual = email; 
         if (email.endsWith(DOMINIO_PERMITIDO) || CORREOS_MAESTROS.includes(email)) {
             pantallaBloqueo.style.display = 'none';
             appPrincipal.style.display = 'block';
@@ -244,7 +248,7 @@ function iniciarMotorDelMapa() {
     }
 }
 
-// --- 3. MÓDULO NLP (ACTUALIZADO PARA CONSULTAS AGREGADAS) ---
+// --- 3. MÓDULO NLP: CONSULTOR INTELIGENTE Y TELEMETRÍA ---
 function iniciarChatInteligente() {
     const chatWidget = document.getElementById('panel-chat');
     const btnToggle = document.getElementById('chat-header');
@@ -271,10 +275,21 @@ function iniciarChatInteligente() {
         mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
     };
 
+    const registrarConsultaEnFirebase = async (textoConsulta) => {
+        try {
+            await addDoc(collection(db, "historial_permisos"), {
+                consulta: textoConsulta,
+                usuario: usuarioActual,
+                fecha: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Error registrando métrica: ", e);
+        }
+    };
+
     const procesarConsulta = (textoConsulta) => {
         let txt = textoConsulta.toLowerCase().trim();
 
-        // 3.1. Validar Consultas Agrupadas (Listados Generales)
         if (txt.includes('por vencer') || txt.includes('4 meses') || txt.includes('vencer')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
@@ -321,7 +336,6 @@ function iniciarChatInteligente() {
             return lista.length > 0 ? `🟢 <b>Estructuras culminadas:</b><br>${lista.join(', ')}` : `No hay obras culminadas registradas.`;
         }
 
-        // 3.2. Validar Consultas Individuales (Por Estación)
         let estacionHallada = null;
         for (let item of window.datosGlobales) {
             if (item.ID) {
@@ -357,10 +371,13 @@ function iniciarChatInteligente() {
         if (texto !== '') {
             agregarMensaje(texto, 'user');
             inputChat.value = '';
+            
+            registrarConsultaEnFirebase(texto);
+
             setTimeout(() => {
                 let respuesta = procesarConsulta(texto);
                 agregarMensaje(respuesta, 'bot');
-            }, 400); // Simulador de latencia natural
+            }, 400); 
         }
     };
 
