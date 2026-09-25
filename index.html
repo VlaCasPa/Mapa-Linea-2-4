@@ -63,7 +63,7 @@
         .tabla-scroll { max-height: 45vh; overflow-y: auto; overflow-x: auto; }
     </style>
 </head>
-<body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-50 text-gray-800 font-sans antialiased relative lg:h-screen lg:flex lg:flex-col overflow-x-hidden">
 
     <!-- 1. PANTALLA DE AUTENTICACIÓN -->
     <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-50">
@@ -91,14 +91,16 @@
     <div id="app-principal" style="display: none;" class="flex-col w-full max-w-[1920px] mx-auto p-2 md:p-4 h-full overflow-hidden">
         
         <!-- HEADER COMPACTO CON KPIs INTEGRADOS -->
-        <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 lg:gap-0 w-full">
-            <div class="shrink-0 w-full lg:w-auto">
+        <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 lg:gap-0 w-full">
+            
+            <!-- Título Principal (pr-20 evita que el texto choque con el botón absoluto en móviles) -->
+            <div class="shrink-0 w-full lg:w-auto pr-20 lg:pr-0 order-1">
                 <h1 class="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-tight">Autorizaciones Municipales</h1>
-                <p class="text-[0.65rem] md:text-xs text-slate-500 font-semibold">Línea 2 y Ramal L4 - Consorcio Constructor</p>
+                <p class="text-[0.65rem] md:text-xs text-slate-500 font-semibold mt-0.5">Línea 2 y Ramal L4 - Consorcio Constructor</p>
             </div>
             
             <!-- Contenedor Scrollable Horizontal para Celular -->
-            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar gap-3 lg:gap-4 items-center shrink-0 pb-1 lg:pb-0">
+            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar justify-between lg:justify-end gap-1.5 md:gap-4 items-center shrink-0 pb-1 lg:pb-0 mt-1 lg:mt-0 order-3 lg:order-2">
                 <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0">
                     <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">Sin Acción</span>
                     <span id="kpi-rojo" class="text-xl md:text-2xl font-black text-red-600 leading-none">0</span>
@@ -119,18 +121,19 @@
                     <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">Culminadas</span>
                     <span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500 leading-none">0</span>
                 </div>
-                <!-- Botón fijo sin encogerse -->
-                <button id="btn-reporte-ejecutivo" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow font-semibold transition-colors flex items-center text-[0.7rem] md:text-xs ml-1 whitespace-nowrap">
-                    📋 Reporte
-                </button>
             </div>
+
+            <!-- Botón fijo en la esquina superior derecha (Móviles) y alineado a la derecha (Web) -->
+            <button id="btn-reporte-ejecutivo" class="absolute top-3 right-3 lg:static shrink-0 bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 md:px-4 md:py-2 rounded-lg shadow font-semibold transition-colors flex items-center text-[0.65rem] md:text-xs whitespace-nowrap z-10 order-2 lg:order-3 lg:ml-2">
+                📋 Reporte
+            </button>
         </header>
 
         <!-- ÁREA DE TRABAJO (SPLIT VIEW: 2/3 Mapa - 1/3 Data) -->
         <div class="flex flex-col lg:flex-row gap-4 flex-grow min-h-0 overflow-y-auto lg:overflow-y-hidden pb-16 lg:pb-0 w-full">
             
             <!-- MITAD IZQUIERDA: MAPA Y FILTROS (66%) -->
-            <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[60vh] lg:h-full shrink-0">
+            <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[65vh] lg:h-full shrink-0">
                 
                 <!-- Filtro Desplegable (Acordeón Nativo) -->
                 <details open class="group absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-white/95 backdrop-blur-sm p-2 md:p-3 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm transition-all">
