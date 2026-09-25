@@ -19,15 +19,8 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 let usuarioActual = "anonimo"; 
 
-const CORREOS_MAESTROS = [
-    "zebaxx@gmail.com", 
-    "permisosccm2l@gmail.com",
-    "tnoriega.arq@gmail.com",
-    "supervisor@gmail.com"
-]; 
+const CORREOS_MAESTROS = ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnoriega.arq@gmail.com", "supervisor@gmail.com"]; 
 const DOMINIO_PERMITIDO = "@ccmetrolima.com";
-
-const googleBtnHTML = `<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Ingreso Autorizado`;
 
 const btnLoginGoogle = document.getElementById('btn-login-google');
 const btnLoginCorp = document.getElementById('btn-login-corp');
@@ -44,7 +37,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         signInWithPopup(auth, provider).catch(() => {
             mensajeError.innerText = "Error de autenticación. Verifica tus permisos.";
             mensajeError.style.display = 'block';
-            btnLoginGoogle.innerHTML = googleBtnHTML;
+            btnLoginGoogle.innerHTML = "Ingreso Autorizado";
         });
     });
 
@@ -59,7 +52,7 @@ setPersistence(auth, browserLocalPersistence).then(() => {
         mensajeError.style.display = 'none';
         btnLoginCorp.innerHTML = "Validando credenciales..."; 
         signInWithEmailAndPassword(auth, email, password).catch(() => {
-            mensajeError.innerText = "Credenciales incorrectas o acceso denegado. Contacte al administrador.";
+            mensajeError.innerText = "Credenciales incorrectas o acceso denegado.";
             mensajeError.style.display = 'block';
             btnLoginCorp.innerHTML = "Ingresar al Sistema";
         });
@@ -72,13 +65,12 @@ onAuthStateChanged(auth, (user) => {
         usuarioActual = email; 
         if (email.endsWith(DOMINIO_PERMITIDO) || CORREOS_MAESTROS.includes(email)) {
             pantallaBloqueo.style.display = 'none';
-            appPrincipal.style.display = 'block';
+            appPrincipal.style.display = 'flex';
             iniciarMotorDelMapa(); 
         } else {
             signOut(auth).then(() => {
-                mensajeError.innerText = `Acceso denegado. Comunícate con la administración para solicitar permiso de ingreso.`;
+                mensajeError.innerText = `Acceso denegado. Comunícate con la administración para solicitar permiso.`;
                 mensajeError.style.display = 'block';
-                btnLoginGoogle.innerHTML = googleBtnHTML;
             });
         }
     } else {
@@ -92,14 +84,13 @@ let mapaInicializado = false;
 let map;
 let grupoMarcadores;
 let marcadoresGuardados = []; 
-let filtroActualID = "Todos";
 let filtroActualEstado = "Todos";
 window.datosGlobales = [];
-let chartInstancia = null; 
+let chartObra = null; 
+let chartDesvio = null; 
 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
-// Normalizador Inteligente (Ignora tildes y mayúsculas)
 const normalizarTexto = (str) => {
     if (!str) return "";
     return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -110,48 +101,38 @@ function iniciarMotorDelMapa() {
     mapaInicializado = true;
 
     map = L.map('map').setView([-12.055, -77.050], 12);
-    L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'] }).addTo(map);
+    // Renderizado en escala de grises mediante clase CSS
+    L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], className: 'mapa-google-gris' }).addTo(map);
     grupoMarcadores = L.featureGroup().addTo(map);
 
     Papa.parse(urlCSV, {
-        download: true, 
-        header: true,
+        download: true, header: true,
         complete: function(results) {
             window.datosGlobales = results.data; 
-            let contenedorIDs = document.getElementById('contenedor-filtros-id');
             
             window.datosGlobales.forEach(item => {
                 if (item.Latitud && item.Longitud && item.ID) {
                     
-                    if (!document.querySelector(`button[data-id="${item.ID}"]`)) {
-                        let btn = document.createElement('button');
-                        btn.className = 'btn-pill';
-                        btn.setAttribute('data-id', item.ID);
-                        btn.innerText = item.ID;
-                        if (contenedorIDs) contenedorIDs.appendChild(btn);
-                    }
-
-                    // Evaluación Estratégica del Riesgo
                     let evalObra = evaluarRiesgo(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
                     let evalDesvio = evaluarRiesgo(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
-                    let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="popup-summary text-blue-600 font-semibold cursor-pointer text-xs">💬 Ver sustento...</summary><div class="mt-1 text-xs text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Obra_Comentarios}</div></details>` : '';
-                    let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="popup-summary text-blue-600 font-semibold cursor-pointer text-xs">💬 Ver sustento...</summary><div class="mt-1 text-xs text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Desvio_Comentarios}</div></details>` : '';
+                    let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Obra_Comentarios}</div></details>` : '';
+                    let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Desvio_Comentarios}</div></details>` : '';
 
                     let popupContent = `
                         <div class="popup-container">
                             <h3 class="popup-title">${item.ID}: ${item.Nombre}</h3>
                             <div class="popup-subtitle">📍 ${item.Municipalidad} | ${item.Linea} - ${item.Tipo}</div>
                             <div class="auth-box ${obtenerClaseCSS(evalObra.estadoRiesgo)}">
-                                <span class="font-bold block mb-1">🚧 Autorización de Obra</span>
-                                Resolución: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
-                                Estado: <b>${formatearTextoPopup(evalObra)}</b>
+                                <span class="font-bold block mb-1 text-slate-700">🚧 Autorización de Obra</span>
+                                Res: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
+                                Estado: <b class="text-slate-800">${formatearTextoPopup(evalObra)}</b>
                                 ${comObra}
                             </div>
                             <div class="auth-box ${obtenerClaseCSS(evalDesvio.estadoRiesgo)}">
-                                <span class="font-bold block mb-1">🚦 Desvío de Tránsito</span>
-                                Resolución: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
-                                Estado: <b>${formatearTextoPopup(evalDesvio)}</b>
+                                <span class="font-bold block mb-1 text-slate-700">🚦 Desvío de Tránsito</span>
+                                Res: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
+                                Estado: <b class="text-slate-800">${formatearTextoPopup(evalDesvio)}</b>
                                 ${comDesvio}
                             </div>
                         </div>
@@ -161,32 +142,21 @@ function iniciarMotorDelMapa() {
                     let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
 
                     if (!isNaN(lat) && !isNaN(lon)) {
-                        let marker = L.circleMarker([lat, lon], { radius: 8, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.8 });
-                        
+                        let marker = L.circleMarker([lat, lon], { radius: 7, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.9 });
                         let severidadGlobal = determinarSeveridadVisual(evalObra, evalDesvio);
                         aplicarEstiloMarcador(marker, severidadGlobal);
                         
                         marker.bindPopup(popupContent);
-                        marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/80 px-1 rounded shadow-sm text-xs', offset: [5, 0] });
+                        marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/90 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm text-[0.7rem] text-slate-700', offset: [5, 0] });
                         
                         marcadoresGuardados.push({ marcador: marker, datos: item, evalObra: evalObra, evalDesvio: evalDesvio, severidadGlobal: severidadGlobal });
                     }
                 }
             });
 
-            // Listeners de Filtros
-            document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(btn => {
+            document.querySelectorAll('.filtro-seccion .btn-pill').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    filtroActualID = e.target.getAttribute('data-id');
-                    aplicarFiltros();
-                });
-            });
-
-            document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.filtro-seccion:nth-child(2) .btn-pill').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.filtro-seccion .btn-pill').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
                     filtroActualEstado = e.target.getAttribute('data-estado');
                     aplicarFiltros();
@@ -201,7 +171,6 @@ function iniciarMotorDelMapa() {
     });
 }
 
-// --- EVALUADOR MULTIDIMENSIONAL ---
 function evaluarRiesgo(dias, comentarios) {
     let dNum = parseInt(dias);
     let dStr = normalizarTexto(dias);
@@ -218,74 +187,40 @@ function evaluarRiesgo(dias, comentarios) {
     let estadoRiesgo = 'VIGENTE';
     let accion = 'Monitorear';
 
-    if (esCulminado) {
-        estadoRiesgo = 'CULMINADO'; accion = 'Ninguna';
-    } else if (esExonerado) {
-        estadoRiesgo = 'LEY31955'; accion = 'Archivar';
-    } else if (esIndefinido) {
-        estadoRiesgo = 'INDEFINIDO'; accion = 'Archivar';
-    } else if (esVencidoMatematico && !esTramite) {
-        estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata'; 
-    } else if (esVencidoMatematico && esTramite) {
-        estadoRiesgo = 'CRITICO_EN_TRAMITE'; accion = 'Insistir a la Entidad'; 
-    } else if (esAlertaTemprana && !esTramite) {
-        estadoRiesgo = 'ALERTA_TEMPRANA'; accion = 'Preparar Expediente'; 
-    } else if (esTramite) {
-        estadoRiesgo = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento Regular';
-    } else if (!isNaN(dNum) && dNum === 0) {
-        estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata';
-    }
+    if (esCulminado) { estadoRiesgo = 'CULMINADO'; accion = 'Archivar'; }
+    else if (esExonerado) { estadoRiesgo = 'LEY31955'; accion = 'Archivar'; } 
+    else if (esIndefinido) { estadoRiesgo = 'INDEFINIDO'; accion = 'Archivar'; } 
+    else if (esVencidoMatematico && !esTramite) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata'; } 
+    else if (esVencidoMatematico && esTramite) { estadoRiesgo = 'CRITICO_EN_TRAMITE'; accion = 'Insistir a la Entidad'; } 
+    else if (esAlertaTemprana && !esTramite) { estadoRiesgo = 'ALERTA_TEMPRANA'; accion = 'Preparar Expediente'; } 
+    else if (esTramite) { estadoRiesgo = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento Regular'; } 
+    else if (!isNaN(dNum) && dNum === 0) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata'; }
 
     return { diasOriginal: dias, diasValor: isNaN(dNum) ? null : dNum, esTramite: esTramite, esVencido: esVencidoMatematico, estadoRiesgo: estadoRiesgo, accion: accion };
 }
 
 function obtenerClaseCSS(estado) {
-    const mapa = {
-        'CRITICO_SIN_ACCION': 'estado-critico-sin-accion',
-        'CRITICO_EN_TRAMITE': 'estado-critico-en-tramite',
-        'ALERTA_TEMPRANA': 'estado-alerta',
-        'TRAMITE_EN_PLAZO': 'estado-tramite-plazo',
-        'LEY31955': 'estado-exonerado',
-        'CULMINADO': 'estado-culminado',
-        'INDEFINIDO': 'estado-exonerado'
-    };
+    const mapa = { 'CRITICO_SIN_ACCION': 'estado-critico-sin-accion', 'CRITICO_EN_TRAMITE': 'estado-critico-en-tramite', 'ALERTA_TEMPRANA': 'estado-alerta', 'TRAMITE_EN_PLAZO': 'estado-tramite-plazo', 'LEY31955': 'estado-exonerado', 'CULMINADO': 'estado-culminado', 'INDEFINIDO': 'estado-exonerado' };
     return mapa[estado] || 'estado-tramite-plazo';
 }
 
 function formatearTextoPopup(ev) {
-    if (ev.estadoRiesgo === 'CULMINADO') return "Obra Finalizada";
-    if (ev.estadoRiesgo === 'LEY31955') return "Amparo Ley N° 31955";
-    if (ev.estadoRiesgo === 'INDEFINIDO') return "Plazo Indefinido";
-
-    let textoDias = "";
-    if (ev.diasValor !== null) {
-        textoDias = ev.diasValor < 0 ? `¡Vencido hace ${Math.abs(ev.diasValor)} días!` : `Quedan ${ev.diasValor} días`;
-    }
-
-    if (ev.estadoRiesgo === 'CRITICO_EN_TRAMITE' || ev.estadoRiesgo === 'TRAMITE_EN_PLAZO') {
-        return `Renovación en Trámite ${textoDias ? '(' + textoDias + ')' : ''}`;
-    }
-    return textoDias || ev.diasOriginal || "No definido";
+    if (ev.estadoRiesgo === 'CULMINADO') return "Finalizada";
+    if (ev.estadoRiesgo === 'LEY31955') return "Ley N° 31955";
+    if (ev.estadoRiesgo === 'INDEFINIDO') return "Indefinido";
+    let textoDias = ev.diasValor !== null ? (ev.diasValor < 0 ? `Vencido (${Math.abs(ev.diasValor)}d)` : `Quedan ${ev.diasValor}d`) : "";
+    if (ev.estadoRiesgo === 'CRITICO_EN_TRAMITE' || ev.estadoRiesgo === 'TRAMITE_EN_PLAZO') return `En Trámite ${textoDias ? '- ' + textoDias : ''}`;
+    return textoDias || ev.diasOriginal || "S/D";
 }
 
 function aplicarEstiloMarcador(marker, estado) {
     marker.getElement()?.classList.remove('brillo-preventivo', 'brillo-tramite-vencido');
-    
-    if (estado === 'CRITICO_SIN_ACCION') {
-        marker.setStyle({ fillColor: "#dc2626", color: "#ffffff", weight: 2 });
-    } else if (estado === 'CRITICO_EN_TRAMITE') {
-        marker.setStyle({ fillColor: "#c026d3", color: "#dc2626", weight: 3 });
-        marker.getElement()?.classList.add('brillo-tramite-vencido');
-    } else if (estado === 'ALERTA_TEMPRANA') {
-        marker.setStyle({ fillColor: "#f59e0b", color: "#ffffff", weight: 2 });
-        marker.getElement()?.classList.add('brillo-preventivo');
-    } else if (estado === 'LEY31955') {
-        marker.setStyle({ fillColor: "#f97316", color: "#ffffff", weight: 2 });
-    } else if (estado === 'TRAMITE_EN_PLAZO') {
-        marker.setStyle({ fillColor: "#3b82f6", color: "#ffffff", weight: 2 });
-    } else {
-        marker.setStyle({ fillColor: "#10b981", color: "#ffffff", weight: 2 });
-    }
+    if (estado === 'CRITICO_SIN_ACCION') marker.setStyle({ fillColor: "#dc2626", color: "#ffffff" });
+    else if (estado === 'CRITICO_EN_TRAMITE') { marker.setStyle({ fillColor: "#c026d3", color: "#dc2626", weight: 2 }); marker.getElement()?.classList.add('brillo-tramite-vencido'); }
+    else if (estado === 'ALERTA_TEMPRANA') { marker.setStyle({ fillColor: "#f59e0b", color: "#ffffff" }); marker.getElement()?.classList.add('brillo-preventivo'); }
+    else if (estado === 'LEY31955') marker.setStyle({ fillColor: "#f97316", color: "#ffffff" });
+    else if (estado === 'TRAMITE_EN_PLAZO') marker.setStyle({ fillColor: "#3b82f6", color: "#ffffff" });
+    else marker.setStyle({ fillColor: "#10b981", color: "#ffffff" });
 }
 
 function determinarSeveridadVisual(obra, desvio) {
@@ -298,37 +233,28 @@ function aplicarFiltros() {
     let boundsCount = 0;
     
     marcadoresGuardados.forEach(obj => {
-        let mostrarPorID = (filtroActualID === "Todos" || obj.datos.ID === filtroActualID);
-        let mostrarPorEstado = true;
+        let mostrar = true;
+        if (filtroActualEstado === "Criticos") mostrar = (obj.severidadGlobal === 'CRITICO_SIN_ACCION');
+        else if (filtroActualEstado === "Tramite") mostrar = (obj.evalObra.esTramite || obj.evalDesvio.esTramite);
+        else if (filtroActualEstado === "Menor4Meses") mostrar = (obj.severidadGlobal === 'ALERTA_TEMPRANA');
+        else if (filtroActualEstado === "Culminado") mostrar = (obj.severidadGlobal === 'CULMINADO');
         
-        if (filtroActualEstado === "Criticos") {
-            mostrarPorEstado = (obj.severidadGlobal === 'CRITICO_SIN_ACCION');
-        } else if (filtroActualEstado === "Tramite") {
-            mostrarPorEstado = (obj.evalObra.esTramite || obj.evalDesvio.esTramite);
-        } else if (filtroActualEstado === "Menor4Meses") {
-            mostrarPorEstado = (obj.severidadGlobal === 'ALERTA_TEMPRANA');
-        }
-        
-        if (mostrarPorID && mostrarPorEstado) { 
-            obj.marcador.addTo(grupoMarcadores); 
-            boundsCount++; 
-        }
+        if (mostrar) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
     });
-    
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
 }
 
-// --- TABLERO GERENCIAL Y SEMÁFORO ---
+// --- TABLERO GERENCIAL Y GRÁFICOS ---
 function procesarTableroGerencial() {
     let tCriticos = 0, tTramite = 0, tAlerta = 0, tLey = 0, tCulminado = 0;
     let dataSemaforo = [];
-    let dataGrafico = [];
+    let rankingObra = [];
+    let rankingDesvio = [];
 
     marcadoresGuardados.forEach(obj => {
         const { evalObra, evalDesvio, datos } = obj;
 
-        // Sumatoria KPIs (Se mide de forma independiente para mostrar la brecha)
-        if (evalObra.esVencido || evalDesvio.esVencido) tCriticos++;
+        if (evalObra.estadoRiesgo === 'CRITICO_SIN_ACCION' || evalDesvio.estadoRiesgo === 'CRITICO_SIN_ACCION') tCriticos++;
         if (evalObra.esTramite || evalDesvio.esTramite) tTramite++;
         if (obj.severidadGlobal === 'ALERTA_TEMPRANA') tAlerta++;
         if (obj.severidadGlobal === 'LEY31955') tLey++;
@@ -338,12 +264,13 @@ function procesarTableroGerencial() {
             if (item.ev.estadoRiesgo === 'CRITICO_SIN_ACCION' || item.ev.estadoRiesgo === 'CRITICO_EN_TRAMITE' || item.ev.estadoRiesgo === 'ALERTA_TEMPRANA') {
                 dataSemaforo.push({
                     id: datos.ID, jurisdiccion: datos.Municipalidad, tipo: item.tipo, 
-                    resolucion: item.res, dias: item.ev.diasValor, 
-                    estado: item.ev.estadoRiesgo, accion: item.ev.accion
+                    resolucion: item.res, dias: item.ev.diasValor, estado: item.ev.estadoRiesgo, accion: item.ev.accion
                 });
             }
             if (item.ev.esTramite && item.ev.diasValor !== null && item.ev.diasValor < 0) {
-                dataGrafico.push({ id: `${datos.ID}-${item.tipo.substring(0,3)}`, diasTranscurridos: Math.abs(item.ev.diasValor) });
+                let objRanking = { id: datos.ID, dias: Math.abs(item.ev.diasValor) };
+                if(item.tipo === 'Obra') rankingObra.push(objRanking);
+                else rankingDesvio.push(objRanking);
             }
         });
     });
@@ -355,8 +282,11 @@ function procesarTableroGerencial() {
     if(document.getElementById('kpi-verde')) document.getElementById('kpi-verde').innerText = tCulminado;
 
     renderizarTablaSemaforo(dataSemaforo);
-    dataGrafico.sort((a, b) => b.diasTranscurridos - a.diasTranscurridos);
-    renderizarGrafico(dataGrafico.slice(0, 15)); // Muestra los 15 trámites más atrasados
+    
+    rankingObra.sort((a, b) => b.dias - a.dias);
+    rankingDesvio.sort((a, b) => b.dias - a.dias);
+    
+    renderizarGraficos(rankingObra.slice(0, 10), rankingDesvio.slice(0, 10));
 }
 
 function renderizarTablaSemaforo(data) {
@@ -368,169 +298,122 @@ function renderizarTablaSemaforo(data) {
     data.sort((a, b) => jerarquia[a.estado] - jerarquia[b.estado] || a.dias - b.dias);
 
     data.forEach(fila => {
-        let claseColor = fila.estado === 'CRITICO_SIN_ACCION' ? 'bg-red-600 text-white' : 
-                         fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-black';
+        let claseColor = fila.estado === 'CRITICO_SIN_ACCION' ? 'bg-red-500 text-white' : 
+                         fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-slate-800';
         let textoDias = fila.dias < 0 ? `${fila.dias} días (Vencido)` : `${fila.dias} días (Alerta)`;
+        
+        // Estilos pasteles para diferenciar tipo de trámite
+        let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50' : 'bg-fuchsia-50/40';
 
         tbody.innerHTML += `
-            <tr class="border-b hover:bg-slate-50 transition-colors">
-                <td class="p-3 font-bold text-slate-700">${fila.id}</td>
-                <td class="p-3 text-slate-600">${fila.jurisdiccion}</td>
-                <td class="p-3 text-slate-600">${fila.tipo}</td>
-                <td class="p-3 text-xs text-slate-500">${fila.resolucion || 'S/N'}</td>
-                <td class="p-3 text-center"><span class="px-2 py-1 rounded shadow-sm font-semibold text-xs whitespace-nowrap ${claseColor}">${textoDias}</span></td>
-                <td class="p-3 text-xs font-bold text-slate-700">${fila.accion}</td>
+            <tr class="border-b border-white ${bgFila}">
+                <td class="p-2.5 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
+                <td class="p-2.5 text-slate-600 font-semibold">${fila.tipo}</td>
+                <td class="p-2.5 text-slate-500 text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
+                <td class="p-2.5 text-center flex flex-col items-center justify-center gap-1">
+                    <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.7rem] whitespace-nowrap w-full ${claseColor}">${textoDias}</span>
+                    <span class="text-[0.65rem] font-bold text-slate-700 uppercase tracking-tight">${fila.accion}</span>
+                </td>
             </tr>`;
     });
     window.dataSemaforoActual = data; 
 }
 
-function renderizarGrafico(data) {
-    const ctx = document.getElementById('grafico-ranking-tramites');
-    if (!ctx) return;
-    if (chartInstancia) chartInstancia.destroy();
+function renderizarGraficos(dataObra, dataDesvio) {
+    const ctxObra = document.getElementById('grafico-ranking-obra');
+    const ctxDesvio = document.getElementById('grafico-ranking-desvio');
+    
+    if (chartObra) chartObra.destroy();
+    if (chartDesvio) chartDesvio.destroy();
 
-    const etiquetas = data.map(d => d.id);
-    const valores = data.map(d => d.diasTranscurridos);
+    const opcionesGlobales = {
+        responsive: true, maintainAspectRatio: false, 
+        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: {size: 10} } } },
+        scales: { y: { beginAtZero: true, border: {display: false}, grid: { color: '#f1f5f9' }, ticks:{font:{size:9}} }, x: { grid: { display: false }, ticks:{font:{size:9, weight:'bold'}} } } 
+    };
 
     if (typeof Chart !== 'undefined') {
-        chartInstancia = new Chart(ctx, {
+        if(ctxObra) chartObra = new Chart(ctxObra, {
             type: 'bar',
-            data: {
-                labels: etiquetas,
-                datasets: [{
-                    label: 'Días Transcurridos en Entidad (Trámite Vencido)',
-                    data: valores,
-                    backgroundColor: '#c026d3', 
-                    borderRadius: 4
-                }]
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: '#e2e8f0' } }, x: { grid: { display: false } } } 
-            }
+            data: { labels: dataObra.map(d=>d.id), datasets: [{ label: 'OBRAS: Días Vencidos', data: dataObra.map(d=>d.dias), backgroundColor: '#38bdf8', borderRadius: 4 }] },
+            options: opcionesGlobales
+        });
+
+        if(ctxDesvio) chartDesvio = new Chart(ctxDesvio, {
+            type: 'bar',
+            data: { labels: dataDesvio.map(d=>d.id), datasets: [{ label: 'DESVÍOS: Días Vencidos', data: dataDesvio.map(d=>d.dias), backgroundColor: '#d946ef', borderRadius: 4 }] },
+            options: opcionesGlobales
         });
     }
 }
 
-// --- GENERADOR DE REPORTE EJECUTIVO ---
 function configurarBotonReporte() {
     let btn = document.getElementById('btn-reporte-ejecutivo');
     if (!btn) return;
-
     btn.addEventListener('click', () => {
         if (!window.dataSemaforoActual || window.dataSemaforoActual.length === 0) return alert("Cargando datos...");
+        let texto = `📊 *CONTROL CONTRACTUAL L2/L4* - ${new Date().toLocaleDateString('es-PE')}\n\n`;
+        let urg = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_SIN_ACCION');
+        let tra = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_EN_TRAMITE');
         
-        let fechaHoy = new Date().toLocaleDateString('es-PE');
-        let texto = `📊 *CONTROL DE CONTINGENCIAS L2/L4* - ${fechaHoy}\n\n`;
+        texto += `🔴 *ACCIÓN INMEDIATA (${urg.length}):*\n`;
+        urg.forEach(u => texto += `- ${u.id} (${u.tipo}): Vencido hace ${Math.abs(u.dias)}d.\n`);
         
-        let urgentes = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_SIN_ACCION');
-        let enTramite = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_EN_TRAMITE');
+        texto += `\n🟣 *SEGUIMIENTO ENTIDADES (${tra.length}):*\n`;
+        tra.forEach(t => texto += `- ${t.id} (${t.tipo}): En trámite, vencido ${Math.abs(t.dias)}d.\n`);
         
-        texto += `🔴 *ACCIÓN INMEDIATA REQUERIDA (${urgentes.length}):*\n`;
-        urgentes.forEach(u => texto += `- ${u.id} (${u.tipo}): Vencido hace ${Math.abs(u.dias)} días.\n`);
-        
-        texto += `\n🟣 *SEGUIMIENTO A ENTIDADES - TRÁMITES EN ESPERA (${enTramite.length}):*\n`;
-        enTramite.forEach(t => texto += `- ${t.id} (${t.tipo}): En trámite, vencido hace ${Math.abs(t.dias)} días.\n`);
-        
-        texto += `\n🔗 *Dashboard Operativo:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
-
+        texto += `\n🔗 *Dashboard:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
         navigator.clipboard.writeText(texto).then(() => {
-            let textoOriginal = btn.innerHTML;
-            btn.innerHTML = "✅ ¡Copiado con Éxito!";
-            btn.classList.add('bg-emerald-600');
-            setTimeout(() => { btn.innerHTML = textoOriginal; btn.classList.remove('bg-emerald-600'); }, 3000);
+            let tOri = btn.innerHTML;
+            btn.innerHTML = "✅ Copiado!";
+            setTimeout(() => { btn.innerHTML = tOri; }, 2500);
         });
     });
 }
 
-// --- MÓDULO NLP: CONSULTOR INTELIGENTE ---
 function iniciarChatInteligente() {
     const chatWidget = document.getElementById('panel-chat');
     const btnToggle = document.getElementById('chat-header');
     const inputChat = document.getElementById('chat-input');
     const btnEnviar = document.getElementById('btn-enviar-chat');
-    const mensajesContainer = document.getElementById('chat-mensajes');
+    const msgContainer = document.getElementById('chat-mensajes');
 
     btnToggle.addEventListener('click', () => {
         if (chatWidget.classList.contains('chat-minimizada')) {
-            chatWidget.classList.remove('chat-minimizada');
-            chatWidget.classList.add('chat-abierta');
+            chatWidget.classList.replace('chat-minimizada', 'chat-abierta');
             inputChat.focus();
         } else {
-            chatWidget.classList.remove('chat-abierta');
-            chatWidget.classList.add('chat-minimizada');
+            chatWidget.classList.replace('chat-abierta', 'chat-minimizada');
         }
     });
 
-    const agregarMensaje = (texto, tipo) => {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = tipo === 'user' ? 'msg-user' : 'msg-bot';
-        msgDiv.innerHTML = texto;
-        mensajesContainer.appendChild(msgDiv);
-        mensajesContainer.scrollTop = mensajesContainer.scrollHeight;
+    const agregarMensaje = (txt, tipo) => {
+        const div = document.createElement('div');
+        div.className = tipo === 'user' ? 'msg-user' : 'msg-bot';
+        div.innerHTML = txt;
+        msgContainer.appendChild(div);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
     };
 
-    const registrarConsultaEnFirebase = async (textoConsulta) => {
-        try {
-            await addDoc(collection(db, "historial_permisos"), {
-                consulta: textoConsulta, usuario: usuarioActual, fecha: serverTimestamp()
-            });
-        } catch (e) { console.error("Error telemétrico: ", e); }
+    const procesarConsulta = (txtCons) => {
+        let txt = normalizarTexto(txtCons);
+        if (txt.includes('por vencer')) {
+            let l = marcadoresGuardados.filter(o => o.severidadGlobal === 'ALERTA_TEMPRANA').map(o => o.datos.ID);
+            return l.length > 0 ? `🟡 <b>Por vencer:</b><br>${l.join(', ')}` : `✅ Ninguna por vencer.`;
+        }
+        let est = marcadoresGuardados.find(o => new RegExp(`\\b${normalizarTexto(o.datos.ID)}\\b`, 'i').test(txt));
+        if (!est) return "Identifica la estructura (Ej: 'PV19' o 'E12').";
+        return `<b>📍 ${est.datos.ID}</b><br>🚧 <b>Obra:</b> ${formatearTextoPopup(est.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(est.evalDesvio)}`;
     };
 
-    const procesarConsulta = (textoConsulta) => {
-        let txt = normalizarTexto(textoConsulta);
-
-        if (txt.includes('por vencer') || txt.includes('4 meses') || txt.includes('vencer')) {
-            let lista = marcadoresGuardados.filter(obj => obj.severidadGlobal === 'ALERTA_TEMPRANA').map(obj => obj.datos.ID);
-            return lista.length > 0 ? `🟡 <b>Estructuras por vencer (< 4 meses):</b><br>${lista.join(', ')}` : `✅ No hay estructuras por vencer.`;
-        }
-
-        if (txt.includes('accion') || txt.includes('critico') || txt.includes('sin accion')) {
-            let lista = marcadoresGuardados.filter(obj => obj.severidadGlobal === 'CRITICO_SIN_ACCION').map(obj => obj.datos.ID);
-            return lista.length > 0 ? `🔴 <b>Estructuras Sin Acción (Urgente):</b><br>${lista.join(', ')}` : `✅ No hay expedientes olvidados.`;
-        }
-
-        if (txt.includes('tramite') || txt.includes('entidad')) {
-            let lista = marcadoresGuardados.filter(obj => obj.evalObra.esTramite || obj.evalDesvio.esTramite).map(obj => obj.datos.ID);
-            return lista.length > 0 ? `🟣 <b>Estructuras en trámite:</b><br>${lista.join(', ')}` : `No hay estructuras en trámite actualmente.`;
-        }
-
-        let estacionHallada = marcadoresGuardados.find(obj => {
-            let idLimpio = normalizarTexto(obj.datos.ID);
-            return new RegExp(`\\b${idLimpio}\\b`, 'i').test(txt);
-        });
-
-        if (!estacionHallada) return "Asegúrate de incluir el código exacto de la estructura (Ej. 'E12' o 'PV19'), o hazme una consulta general como '¿Cuáles requieren acción inmediata?'.";
-
-        let pideTransito = txt.includes('transito') || txt.includes('desvio');
-        let pideObra = txt.includes('obra') || txt.includes('cerramiento');
-        
-        let respuesta = `<b>📍 ${estacionHallada.datos.ID} - ${estacionHallada.datos.Nombre}</b><br>`;
-
-        if (pideTransito && !pideObra) {
-            respuesta += `🚦 <b>Tránsito:</b> ${formatearTextoPopup(estacionHallada.evalDesvio)}`;
-        } else if (pideObra && !pideTransito) {
-            respuesta += `🚧 <b>Obra:</b> ${formatearTextoPopup(estacionHallada.evalObra)}`;
-        } else {
-            respuesta += `🚧 <b>Obra:</b> ${formatearTextoPopup(estacionHallada.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(estacionHallada.evalDesvio)}`;
-        }
-        return respuesta;
+    const enviar = () => {
+        let t = inputChat.value.trim();
+        if (!t) return;
+        agregarMensaje(t, 'user');
+        inputChat.value = '';
+        setTimeout(() => agregarMensaje(procesarConsulta(t), 'bot'), 400); 
     };
 
-    const enviarConsulta = () => {
-        let texto = inputChat.value.trim();
-        if (texto !== '') {
-            agregarMensaje(texto, 'user');
-            inputChat.value = '';
-            registrarConsultaEnFirebase(texto);
-            setTimeout(() => { agregarMensaje(procesarConsulta(texto), 'bot'); }, 400); 
-        }
-    };
-
-    btnEnviar.addEventListener('click', enviarConsulta);
-    inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarConsulta(); });
+    btnEnviar.addEventListener('click', enviar);
+    inputChat.addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
 }
