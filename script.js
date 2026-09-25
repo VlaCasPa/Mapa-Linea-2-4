@@ -123,7 +123,7 @@ function iniciarMotorDelMapa() {
                         if (contenedorIDs) contenedorIDs.appendChild(btn);
                     }
 
-                    // El algoritmo lee directamente las columnas de comentarios existentes
+                    // Lectura analítica de estado y comentarios para asignar clasificación
                     let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
                     let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
@@ -171,7 +171,6 @@ function iniciarMotorDelMapa() {
                         } else if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
                             severidad = 'tramite'; 
                             markerColor = "#A855F7"; 
-                            // Identificar si está en trámite pero su plazo matemático ya expiró
                             if ((!isNaN(diasObra) && diasObra < 0) || (!isNaN(diasDesvio) && diasDesvio < 0)) {
                                 esTramiteVencido = true;
                             }
@@ -181,7 +180,7 @@ function iniciarMotorDelMapa() {
                         
                         let markerClass = '';
                         if (alertaPreventiva) markerClass = 'brillo-preventivo';
-                        if (esTramiteVencido) markerClass = 'brillo-tramite-vencido'; // Borde de alerta si el trámite está fuera de plazo
+                        if (esTramiteVencido) markerClass = 'brillo-tramite-vencido'; 
 
                         let marker = L.circleMarker([lat, lon], { 
                             radius: 8, 
@@ -200,7 +199,6 @@ function iniciarMotorDelMapa() {
                 }
             });
 
-            // Asignación de eventos a los filtros
             document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(b => b.classList.remove('active'));
@@ -415,30 +413,41 @@ function iniciarChatInteligente() {
     inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarConsulta(); });
 }
 
-// --- FUNCIONES LÓGICAS AUXILIARES (AHORA ANALIZAN TEXTO) ---
-function obtenerClaseEstado(dias, comentariosStr) {
-    let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
-    let textoComentario = (comentariosStr !== null && comentariosStr !== undefined) ? comentariosStr.toString().toLowerCase() : "";
+// --- FUNCIONES LÓGICAS AUXILIARES NORMALIZADAS ---
+const normalizarTexto = (str) => {
+    if (!str) return "";
+    return String(str)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remueve tildes diacríticas
+        .toLowerCase()
+        .trim();
+};
 
-    // 1. Prioridad Absoluta mediante análisis de texto en la celda de comentarios
+function obtenerClaseEstado(dias, comentariosStr) {
+    let d = normalizarTexto(dias);
+    let textoComentario = normalizarTexto(comentariosStr);
+
+    // 1. Prioridad Absoluta mediante análisis de texto normalizado
     if (d === "culminado" || d === "culminada" || textoComentario.includes("culminado") || textoComentario.includes("culminada")) return 'estado-culminado';
-    if (d === "en trámite" || d === "en tramite" || textoComentario.includes("trámite") || textoComentario.includes("tramite")) return 'estado-tramite';
+    if (d === "en tramite" || textoComentario.includes("tramite")) return 'estado-tramite';
     if (d === "exonerado" || textoComentario.includes("exonerado")) return 'estado-exonerado';
     if (d === "indefinido" || textoComentario.includes("indefinido")) return 'estado-indefinido';
 
-    if (!dias && dias !== 0) return 'estado-critico'; 
+    if (dias === null || dias === undefined || dias === "") return 'estado-critico'; 
     
-    // 2. Cálculo Cronológico si no hay estado administrativo prioritario detectado
+    // 2. Cálculo Cronológico si no hay estado administrativo prioritario
     let numDias = parseInt(dias);
-    if (numDias >= 29) return 'estado-optimo';
-    if (numDias >= 0 && numDias < 29) return 'estado-critico'; 
-    if (numDias < 0) return 'estado-vencido'; 
+    if (!isNaN(numDias)) {
+        if (numDias >= 29) return 'estado-optimo';
+        if (numDias >= 0 && numDias < 29) return 'estado-critico'; 
+        if (numDias < 0) return 'estado-vencido'; 
+    }
     return 'estado-critico';
 }
 
 function formatearDias(dias, comentariosStr) {
-    let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
-    let textoComentario = (comentariosStr !== null && comentariosStr !== undefined) ? comentariosStr.toString().toLowerCase() : "";
+    let d = normalizarTexto(dias);
+    let textoComentario = normalizarTexto(comentariosStr);
     
     if (d === "culminado" || d === "culminada" || textoComentario.includes("culminado")) return "Obra Finalizada"; 
     
@@ -449,7 +458,7 @@ function formatearDias(dias, comentariosStr) {
         else textoDias = `Quedan ${num} días`;
     }
 
-    if (d === "en trámite" || d === "en tramite" || textoComentario.includes("trámite") || textoComentario.includes("tramite")) {
+    if (d === "en tramite" || textoComentario.includes("tramite")) {
         return `Renovación en Trámite ${textoDias ? '(' + textoDias + ')' : ''}`;
     }
 
@@ -457,7 +466,7 @@ function formatearDias(dias, comentariosStr) {
     if (d === "indefinido" || textoComentario.includes("indefinido")) return "Plazo Indefinido";
     
     if (textoDias) return textoDias;
-    return d;
+    return dias ? dias.toString() : "No definido";
 }
 
 function aplicarFiltros() {
