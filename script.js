@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// --- 1. CREDENCIALES Y AUTENTICACIÓN FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyAalo8_88axc-5QAGT8Winp72A1utZwzZg",
     authDomain: "cerramientos-l2l4-b157e.firebaseapp.com",
@@ -79,7 +78,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- 2. LÓGICA ESPACIAL, KPIs Y SEMÁFORO DE RIESGOS ---
 let mapaInicializado = false;
 let map;
 let grupoMarcadores;
@@ -103,7 +101,6 @@ function iniciarMotorDelMapa() {
     map = L.map('map', { zoomControl: false }).setView([-12.055, -77.050], 12);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Mapa base en gris, opacidad gestionada en el CSS
     L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], className: 'mapa-google-gris' }).addTo(map);
     grupoMarcadores = L.featureGroup().addTo(map);
 
@@ -167,7 +164,7 @@ function iniciarMotorDelMapa() {
 
             aplicarFiltros(); 
             procesarTableroGerencial(); 
-            configurarBotonReporte();
+            configurarManejadoresReportes();
             iniciarChatInteligente();
         }
     });
@@ -247,7 +244,6 @@ function aplicarFiltros() {
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
 }
 
-// --- TABLERO GERENCIAL Y GRÁFICOS VERTICALES ---
 function procesarTableroGerencial() {
     let tCriticos = 0, tTramite = 0, tAlerta = 0, tLey = 0, tCulminado = 0;
     let dataSemaforo = [];
@@ -270,10 +266,12 @@ function procesarTableroGerencial() {
                     resolucion: item.res, dias: item.ev.diasValor, estado: item.ev.estadoRiesgo, accion: item.ev.accion
                 });
             }
-            if (item.ev.esTramite && item.ev.diasValor !== null && item.ev.diasValor < 0) {
-                let objRanking = { id: datos.ID, dias: Math.abs(item.ev.diasValor) };
-                if(item.tipo === 'Obra') rankingObra.push(objRanking);
-                else rankingDesvio.push(objRanking);
+            if (item.ev.estadoRiesgo === 'CRITICO_SIN_ACCION' || item.ev.estadoRiesgo === 'CRITICO_EN_TRAMITE') {
+                if(item.ev.diasValor !== null && item.ev.diasValor < 0) {
+                    let objRanking = { id: datos.ID, dias: Math.abs(item.ev.diasValor), resolucion: item.res, estado: item.ev.estadoRiesgo };
+                    if(item.tipo === 'Obra') rankingObra.push(objRanking);
+                    else rankingDesvio.push(objRanking);
+                }
             }
         });
     });
@@ -288,6 +286,9 @@ function procesarTableroGerencial() {
     
     rankingObra.sort((a, b) => b.dias - a.dias);
     rankingDesvio.sort((a, b) => b.dias - a.dias);
+    
+    window.dataRankingObra = rankingObra; 
+    window.dataRankingDesvio = rankingDesvio;
     
     renderizarGraficos(rankingObra.slice(0, 10), rankingDesvio.slice(0, 10));
 }
@@ -304,8 +305,6 @@ function renderizarTablaSemaforo(data) {
         let claseColor = fila.estado === 'CRITICO_SIN_ACCION' ? 'bg-red-500 text-white' : 
                          fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-slate-800';
         let textoDias = fila.dias < 0 ? `${fila.dias} días (Vencido)` : `${fila.dias} días (Alerta)`;
-        
-        // El tipo sin negrita, la resolución en negrita (Solicitud del usuario)
         let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50/50' : 'bg-fuchsia-50/40';
 
         tbody.innerHTML += `
@@ -353,28 +352,135 @@ function renderizarGraficos(dataObra, dataDesvio) {
     }
 }
 
-function configurarBotonReporte() {
-    let btn = document.getElementById('btn-reporte-ejecutivo');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-        if (!window.dataSemaforoActual || window.dataSemaforoActual.length === 0) return alert("Cargando datos...");
-        let texto = `📊 *CONTROL CONTRACTUAL L2/L4* - ${new Date().toLocaleDateString('es-PE')}\n\n`;
-        let urg = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_SIN_ACCION');
-        let tra = window.dataSemaforoActual.filter(d => d.estado === 'CRITICO_EN_TRAMITE');
-        
-        texto += `🔴 *ACCIÓN INMEDIATA (${urg.length}):*\n`;
-        urg.forEach(u => texto += `- ${u.id} (${u.tipo}): Vencido hace ${Math.abs(u.dias)}d.\n`);
-        
-        texto += `\n🟣 *SEGUIMIENTO ENTIDADES (${tra.length}):*\n`;
-        tra.forEach(t => texto += `- ${t.id} (${t.tipo}): En trámite, vencido ${Math.abs(t.dias)}d.\n`);
-        
-        texto += `\n🔗 *Dashboard:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
-        navigator.clipboard.writeText(texto).then(() => {
-            let tOri = btn.innerHTML;
-            btn.innerHTML = "✅ Copiado!";
-            setTimeout(() => { btn.innerHTML = tOri; }, 2500);
+// --- GENERADOR DE REPORTES (TXT Y PDF) ---
+function configurarManejadoresReportes() {
+    const btnTxt = document.getElementById('btn-reporte-txt');
+    const btnPdf = document.getElementById('btn-reporte-pdf');
+    
+    if (btnTxt) {
+        btnTxt.addEventListener('click', () => {
+            if (!window.dataSemaforoActual || window.dataSemaforoActual.length === 0) return alert("Cargando datos...");
+            
+            let fechaActual = new Date();
+            let fechaStr = fechaActual.toLocaleDateString('es-PE');
+            let horaStr = fechaActual.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+            
+            let texto = `📊 *REPORTE EJECUTIVO DE PERMISOS - L2/L4*\n📅 Fecha de Corte: ${fechaStr} a las ${horaStr}\n\n`;
+            
+            let obras = window.dataSemaforoActual.filter(d => d.tipo === 'Obra');
+            let desvios = window.dataSemaforoActual.filter(d => d.tipo === 'Desvío');
+            
+            texto += `🚧 *CONTINGENCIAS DE OBRA (${obras.length}):*\n`;
+            if(obras.length === 0) texto += `- Ninguna pendiente.\n`;
+            obras.forEach(o => {
+                let est = o.estado === 'CRITICO_EN_TRAMITE' ? '[EN TRÁMITE]' : '[SIN ACCIÓN]';
+                texto += `- ${o.id}: Vencido hace ${Math.abs(o.dias)}d. ${est}\n`;
+            });
+            
+            texto += `\n🚦 *CONTINGENCIAS DE DESVÍO (${desvios.length}):*\n`;
+            if(desvios.length === 0) texto += `- Ninguna pendiente.\n`;
+            desvios.forEach(d => {
+                let est = d.estado === 'CRITICO_EN_TRAMITE' ? '[EN TRÁMITE]' : '[SIN ACCIÓN]';
+                texto += `- ${d.id}: Vencido hace ${Math.abs(d.dias)}d. ${est}\n`;
+            });
+            
+            texto += `\n🔗 *Dashboard:* https://vlacaspa.github.io/Mapa-Linea-2-4/`;
+            navigator.clipboard.writeText(texto).then(() => {
+                let tOri = btnTxt.innerHTML;
+                btnTxt.innerHTML = "✅ Listo";
+                setTimeout(() => { btnTxt.innerHTML = tOri; }, 2500);
+            });
         });
-    });
+    }
+
+    if (btnPdf) {
+        btnPdf.addEventListener('click', () => {
+            // 1. Preparar datos para la plantilla PDF
+            let fechaActual = new Date();
+            document.getElementById('pdf-fecha').innerText = fechaActual.toLocaleDateString('es-PE');
+            document.getElementById('pdf-hora').innerText = fechaActual.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
+            let totalTramitesTotales = window.datosGlobales.length * 2; // Obras y Desvíos sumados
+            let criticos = parseInt(document.getElementById('kpi-rojo').innerText);
+            let tramite = parseInt(document.getElementById('kpi-morado').innerText);
+            
+            document.getElementById('pdf-kpi-rojo').innerText = criticos;
+            document.getElementById('pdf-kpi-morado').innerText = tramite;
+            
+            let pctRojo = totalTramitesTotales > 0 ? Math.round((criticos / totalTramitesTotales) * 100) : 0;
+            let pctMorado = totalTramitesTotales > 0 ? Math.round((tramite / totalTramitesTotales) * 100) : 0;
+            
+            document.getElementById('pdf-bar-rojo').style.width = pctRojo + '%';
+            document.getElementById('pdf-pct-rojo').innerText = pctRojo + '% del volumen total';
+            
+            document.getElementById('pdf-bar-morado').style.width = pctMorado + '%';
+            document.getElementById('pdf-pct-morado').innerText = pctMorado + '% del volumen total';
+
+            // Llenar Tablas
+            const tbodyObra = document.querySelector('#pdf-tabla-obra tbody');
+            tbodyObra.innerHTML = '';
+            window.dataRankingObra.slice(0, 10).forEach(d => {
+                let estadoStr = d.estado === 'CRITICO_EN_TRAMITE' ? 'En Trámite (Entidad)' : 'Sin Acción (Interno)';
+                let barColor = d.estado === 'CRITICO_EN_TRAMITE' ? '#d946ef' : '#ef4444';
+                let maxWidth = window.dataRankingObra[0]?.dias || 1;
+                let widthPct = Math.max(5, (d.dias / maxWidth) * 100);
+                
+                tbodyObra.innerHTML += `<tr>
+                    <td style="font-weight:bold">${d.id}</td>
+                    <td>${d.resolucion || 'S/R'}</td>
+                    <td>${estadoStr}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:5px">
+                            <span style="min-width:25px; font-weight:bold">${d.dias}d</span>
+                            <div style="height:10px; background-color:${barColor}; width:${widthPct}%; border-radius:3px"></div>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            const tbodyDesvio = document.querySelector('#pdf-tabla-desvio tbody');
+            tbodyDesvio.innerHTML = '';
+            window.dataRankingDesvio.slice(0, 10).forEach(d => {
+                let estadoStr = d.estado === 'CRITICO_EN_TRAMITE' ? 'En Trámite (Entidad)' : 'Sin Acción (Interno)';
+                let barColor = d.estado === 'CRITICO_EN_TRAMITE' ? '#d946ef' : '#ef4444';
+                let maxWidth = window.dataRankingDesvio[0]?.dias || 1;
+                let widthPct = Math.max(5, (d.dias / maxWidth) * 100);
+                
+                tbodyDesvio.innerHTML += `<tr>
+                    <td style="font-weight:bold">${d.id}</td>
+                    <td>${d.resolucion || 'S/R'}</td>
+                    <td>${estadoStr}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:5px">
+                            <span style="min-width:25px; font-weight:bold">${d.dias}d</span>
+                            <div style="height:10px; background-color:${barColor}; width:${widthPct}%; border-radius:3px"></div>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            // 2. Ejecutar HTML2PDF
+            let tOri = btnPdf.innerHTML;
+            btnPdf.innerHTML = "⌛ Procesando...";
+            
+            const elementoAImprimir = document.getElementById('plantilla-pdf-container');
+            elementoAImprimir.style.left = '0'; // Traerlo a pantalla pero detrás
+            
+            const opciones = {
+                margin: 0,
+                filename: `Reporte_Permisos_${fechaActual.getTime()}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opciones).from(elementoAImprimir).save().then(() => {
+                elementoAImprimir.style.left = '-9999px'; // Ocultar nuevamente
+                btnPdf.innerHTML = "✅ Descargado";
+                setTimeout(() => { btnPdf.innerHTML = tOri; }, 3000);
+            });
+        });
+    }
 }
 
 function iniciarChatInteligente() {
