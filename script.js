@@ -96,8 +96,6 @@ let filtroActualID = "Todos";
 let filtroActualEstado = "Todos";
 window.datosGlobales = [];
 
-// ¡IMPORTANTE! Reemplaza "Estado" por el nombre exacto de la cabecera de tu "Columna K" en el Excel
-const COLUMNA_ESTADO_TRAMITE = "Estado"; 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
 function iniciarMotorDelMapa() {
@@ -125,14 +123,12 @@ function iniciarMotorDelMapa() {
                         if (contenedorIDs) contenedorIDs.appendChild(btn);
                     }
 
-                    // Extraer estado administrativo de la Columna K
-                    let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                    // El algoritmo lee directamente las columnas de comentarios existentes
+                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
-                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
-                    
-                    let resObra = formatearDias(item.Aut_Obra_Dias_Restantes, estadoK);
-                    let resDesvio = formatearDias(item.Aut_Desvio_Dias_Restantes, estadoK);
+                    let resObra = formatearDias(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                    let resDesvio = formatearDias(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
                     let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details"><summary class="popup-summary">💬 Ver comentarios de obra...</summary><div class="popup-comment-text">${item.Aut_Obra_Comentarios}</div></details>` : '';
                     let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details"><summary class="popup-summary">💬 Ver comentarios de desvío...</summary><div class="popup-comment-text">${item.Aut_Desvio_Comentarios}</div></details>` : '';
@@ -185,7 +181,7 @@ function iniciarMotorDelMapa() {
                         
                         let markerClass = '';
                         if (alertaPreventiva) markerClass = 'brillo-preventivo';
-                        if (esTramiteVencido) markerClass = 'brillo-tramite-vencido';
+                        if (esTramiteVencido) markerClass = 'brillo-tramite-vencido'; // Borde de alerta si el trámite está fuera de plazo
 
                         let marker = L.circleMarker([lat, lon], { 
                             radius: 8, 
@@ -204,6 +200,7 @@ function iniciarMotorDelMapa() {
                 }
             });
 
+            // Asignación de eventos a los filtros
             document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     document.querySelectorAll('#contenedor-filtros-id .btn-pill').forEach(b => b.classList.remove('active'));
@@ -237,9 +234,8 @@ function iniciarMotorDelMapa() {
 
             window.datosGlobales.forEach(item => {
                 if (item.ID && item.Latitud) {
-                    let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
                     let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
                     let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
@@ -324,9 +320,8 @@ function iniciarChatInteligente() {
         if (txt.includes('por vencer') || txt.includes('4 meses') || txt.includes('vencer')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                 let dObra = parseInt(item.Aut_Obra_Dias_Restantes);
                 let dDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
                 
@@ -343,9 +338,8 @@ function iniciarChatInteligente() {
         if (txt.includes('vencid') || txt.includes('critico') || txt.includes('crítico')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                 if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') lista.push(item.ID);
             });
             return lista.length > 0 ? `🔴 <b>Estructuras Críticas o Vencidas:</b><br>${lista.join(', ')}` : `✅ No hay estructuras críticas ni vencidas.`;
@@ -354,9 +348,8 @@ function iniciarChatInteligente() {
         if (txt.includes('tramite') || txt.includes('trámite')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                 if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') lista.push(item.ID);
             });
             return lista.length > 0 ? `🟣 <b>Estructuras en trámite:</b><br>${lista.join(', ')}` : `No hay estructuras en trámite actualmente.`;
@@ -365,9 +358,8 @@ function iniciarChatInteligente() {
         if (txt.includes('culminad')) {
              let lista = [];
             window.datosGlobales.forEach(item => {
-                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                 if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') lista.push(item.ID);
             });
             return lista.length > 0 ? `🟢 <b>Estructuras culminadas:</b><br>${lista.join(', ')}` : `No hay obras culminadas registradas.`;
@@ -389,9 +381,8 @@ function iniciarChatInteligente() {
         let pideTransito = txt.includes('transito') || txt.includes('tránsito') || txt.includes('desvio') || txt.includes('desvío');
         let pideObra = txt.includes('obra') || txt.includes('cerramiento');
         
-        let estadoHalladaK = estacionHallada[COLUMNA_ESTADO_TRAMITE] ? estacionHallada[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
-        let resObra = formatearDias(estacionHallada.Aut_Obra_Dias_Restantes, estadoHalladaK);
-        let resDesvio = formatearDias(estacionHallada.Aut_Desvio_Dias_Restantes, estadoHalladaK);
+        let resObra = formatearDias(estacionHallada.Aut_Obra_Dias_Restantes, estacionHallada.Aut_Obra_Comentarios);
+        let resDesvio = formatearDias(estacionHallada.Aut_Desvio_Dias_Restantes, estacionHallada.Aut_Desvio_Comentarios);
 
         let respuesta = `<b>📍 ${estacionHallada.ID} - ${estacionHallada.Nombre}</b><br>`;
 
@@ -424,20 +415,20 @@ function iniciarChatInteligente() {
     inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarConsulta(); });
 }
 
-// --- FUNCIONES LÓGICAS AUXILIARES REFACTORIZADAS ---
-function obtenerClaseEstado(dias, estadoK = "") {
-    let estAdmin = estadoK.toLowerCase();
+// --- FUNCIONES LÓGICAS AUXILIARES (AHORA ANALIZAN TEXTO) ---
+function obtenerClaseEstado(dias, comentariosStr) {
     let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
+    let textoComentario = (comentariosStr !== null && comentariosStr !== undefined) ? comentariosStr.toString().toLowerCase() : "";
 
-    // 1. Prioridad Absoluta: Culminados o En Trámite
-    if (estAdmin === "culminado" || estAdmin === "culminada" || d === "culminado" || d === "culminada") return 'estado-culminado';
-    if (estAdmin === "en trámite" || estAdmin === "en tramite" || d === "en trámite" || d === "en tramite") return 'estado-tramite';
-    if (estAdmin === "exonerado" || d === "exonerado") return 'estado-exonerado';
-    if (estAdmin === "indefinido" || d === "indefinido") return 'estado-indefinido';
+    // 1. Prioridad Absoluta mediante análisis de texto en la celda de comentarios
+    if (d === "culminado" || d === "culminada" || textoComentario.includes("culminado") || textoComentario.includes("culminada")) return 'estado-culminado';
+    if (d === "en trámite" || d === "en tramite" || textoComentario.includes("trámite") || textoComentario.includes("tramite")) return 'estado-tramite';
+    if (d === "exonerado" || textoComentario.includes("exonerado")) return 'estado-exonerado';
+    if (d === "indefinido" || textoComentario.includes("indefinido")) return 'estado-indefinido';
 
     if (!dias && dias !== 0) return 'estado-critico'; 
     
-    // 2. Cálculo Cronológico si no hay estado administrativo prioritario
+    // 2. Cálculo Cronológico si no hay estado administrativo prioritario detectado
     let numDias = parseInt(dias);
     if (numDias >= 29) return 'estado-optimo';
     if (numDias >= 0 && numDias < 29) return 'estado-critico'; 
@@ -445,11 +436,11 @@ function obtenerClaseEstado(dias, estadoK = "") {
     return 'estado-critico';
 }
 
-function formatearDias(dias, estadoK = "") {
-    let estAdmin = estadoK.toLowerCase();
+function formatearDias(dias, comentariosStr) {
     let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
+    let textoComentario = (comentariosStr !== null && comentariosStr !== undefined) ? comentariosStr.toString().toLowerCase() : "";
     
-    if (estAdmin === "culminado" || estAdmin === "culminada" || d === "culminado" || d === "culminada") return "Obra Finalizada"; 
+    if (d === "culminado" || d === "culminada" || textoComentario.includes("culminado")) return "Obra Finalizada"; 
     
     let textoDias = "";
     let num = parseInt(dias);
@@ -458,12 +449,12 @@ function formatearDias(dias, estadoK = "") {
         else textoDias = `Quedan ${num} días`;
     }
 
-    if (estAdmin === "en trámite" || estAdmin === "en tramite" || d === "en trámite" || d === "en tramite") {
+    if (d === "en trámite" || d === "en tramite" || textoComentario.includes("trámite") || textoComentario.includes("tramite")) {
         return `Renovación en Trámite ${textoDias ? '(' + textoDias + ')' : ''}`;
     }
 
-    if (estAdmin === "exonerado" || d === "exonerado") return "Amparo Ley N° 31955";
-    if (estAdmin === "indefinido" || d === "indefinido") return "Plazo Indefinido";
+    if (d === "exonerado" || textoComentario.includes("exonerado")) return "Amparo Ley N° 31955";
+    if (d === "indefinido" || textoComentario.includes("indefinido")) return "Plazo Indefinido";
     
     if (textoDias) return textoDias;
     return d;
@@ -474,6 +465,7 @@ function aplicarFiltros() {
     marcadoresGuardados.forEach(obj => {
         let mostrarPorID = (filtroActualID === "Todos" || obj.datos.ID === filtroActualID);
         let mostrarPorEstado = true;
+        
         if (filtroActualEstado === "Criticos") mostrarPorEstado = (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico');
         else if (filtroActualEstado === "Menor4Meses") mostrarPorEstado = obj.esMenor4Meses && obj.estadoSeveridad !== 'tramite';
         else if (filtroActualEstado === "Tramite") mostrarPorEstado = (obj.estadoSeveridad === 'tramite');
