@@ -100,8 +100,10 @@ function iniciarMotorDelMapa() {
     if (mapaInicializado) return; 
     mapaInicializado = true;
 
-    map = L.map('map').setView([-12.055, -77.050], 12);
-    // Renderizado en escala de grises mediante clase CSS
+    map = L.map('map', { zoomControl: false }).setView([-12.055, -77.050], 12);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Mapa base en gris, opacidad gestionada en el CSS
     L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], className: 'mapa-google-gris' }).addTo(map);
     grupoMarcadores = L.featureGroup().addTo(map);
 
@@ -116,8 +118,8 @@ function iniciarMotorDelMapa() {
                     let evalObra = evaluarRiesgo(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
                     let evalDesvio = evaluarRiesgo(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
                     
-                    let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Obra_Comentarios}</div></details>` : '';
-                    let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded">${item.Aut_Desvio_Comentarios}</div></details>` : '';
+                    let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Obra_Comentarios}</div></details>` : '';
+                    let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Desvio_Comentarios}</div></details>` : '';
 
                     let popupContent = `
                         <div class="popup-container">
@@ -142,12 +144,12 @@ function iniciarMotorDelMapa() {
                     let lon = parseFloat(item.Longitud.toString().trim().replace(/,/g, '.'));
 
                     if (!isNaN(lat) && !isNaN(lon)) {
-                        let marker = L.circleMarker([lat, lon], { radius: 7, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.9 });
+                        let marker = L.circleMarker([lat, lon], { radius: 7, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.95 });
                         let severidadGlobal = determinarSeveridadVisual(evalObra, evalDesvio);
                         aplicarEstiloMarcador(marker, severidadGlobal);
                         
                         marker.bindPopup(popupContent);
-                        marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/90 px-1.5 py-0.5 rounded border border-gray-200 shadow-sm text-[0.7rem] text-slate-700', offset: [5, 0] });
+                        marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/95 px-1.5 py-0.5 rounded border border-gray-300 shadow-sm text-[0.65rem] text-slate-700', offset: [5, 0] });
                         
                         marcadoresGuardados.push({ marcador: marker, datos: item, evalObra: evalObra, evalDesvio: evalDesvio, severidadGlobal: severidadGlobal });
                     }
@@ -190,11 +192,11 @@ function evaluarRiesgo(dias, comentarios) {
     if (esCulminado) { estadoRiesgo = 'CULMINADO'; accion = 'Archivar'; }
     else if (esExonerado) { estadoRiesgo = 'LEY31955'; accion = 'Archivar'; } 
     else if (esIndefinido) { estadoRiesgo = 'INDEFINIDO'; accion = 'Archivar'; } 
-    else if (esVencidoMatematico && !esTramite) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata'; } 
-    else if (esVencidoMatematico && esTramite) { estadoRiesgo = 'CRITICO_EN_TRAMITE'; accion = 'Insistir a la Entidad'; } 
-    else if (esAlertaTemprana && !esTramite) { estadoRiesgo = 'ALERTA_TEMPRANA'; accion = 'Preparar Expediente'; } 
-    else if (esTramite) { estadoRiesgo = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento Regular'; } 
-    else if (!isNaN(dNum) && dNum === 0) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción Inmediata'; }
+    else if (esVencidoMatematico && !esTramite) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } 
+    else if (esVencidoMatematico && esTramite) { estadoRiesgo = 'CRITICO_EN_TRAMITE'; accion = 'Insistir Entidad'; } 
+    else if (esAlertaTemprana && !esTramite) { estadoRiesgo = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } 
+    else if (esTramite) { estadoRiesgo = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } 
+    else if (!isNaN(dNum) && dNum === 0) { estadoRiesgo = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; }
 
     return { diasOriginal: dias, diasValor: isNaN(dNum) ? null : dNum, esTramite: esTramite, esVencido: esVencidoMatematico, estadoRiesgo: estadoRiesgo, accion: accion };
 }
@@ -237,6 +239,7 @@ function aplicarFiltros() {
         if (filtroActualEstado === "Criticos") mostrar = (obj.severidadGlobal === 'CRITICO_SIN_ACCION');
         else if (filtroActualEstado === "Tramite") mostrar = (obj.evalObra.esTramite || obj.evalDesvio.esTramite);
         else if (filtroActualEstado === "Menor4Meses") mostrar = (obj.severidadGlobal === 'ALERTA_TEMPRANA');
+        else if (filtroActualEstado === "Ley31955") mostrar = (obj.severidadGlobal === 'LEY31955');
         else if (filtroActualEstado === "Culminado") mostrar = (obj.severidadGlobal === 'CULMINADO');
         
         if (mostrar) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
@@ -244,7 +247,7 @@ function aplicarFiltros() {
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
 }
 
-// --- TABLERO GERENCIAL Y GRÁFICOS ---
+// --- TABLERO GERENCIAL Y GRÁFICOS VERTICALES ---
 function procesarTableroGerencial() {
     let tCriticos = 0, tTramite = 0, tAlerta = 0, tLey = 0, tCulminado = 0;
     let dataSemaforo = [];
@@ -302,17 +305,17 @@ function renderizarTablaSemaforo(data) {
                          fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-slate-800';
         let textoDias = fila.dias < 0 ? `${fila.dias} días (Vencido)` : `${fila.dias} días (Alerta)`;
         
-        // Estilos pasteles para diferenciar tipo de trámite
-        let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50' : 'bg-fuchsia-50/40';
+        // El tipo sin negrita, la resolución en negrita (Solicitud del usuario)
+        let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50/50' : 'bg-fuchsia-50/40';
 
         tbody.innerHTML += `
-            <tr class="border-b border-white ${bgFila}">
-                <td class="p-2.5 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
-                <td class="p-2.5 text-slate-600 font-semibold">${fila.tipo}</td>
-                <td class="p-2.5 text-slate-500 text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
-                <td class="p-2.5 text-center flex flex-col items-center justify-center gap-1">
-                    <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.7rem] whitespace-nowrap w-full ${claseColor}">${textoDias}</span>
-                    <span class="text-[0.65rem] font-bold text-slate-700 uppercase tracking-tight">${fila.accion}</span>
+            <tr class="border-b border-white hover:bg-slate-100 transition-colors ${bgFila}">
+                <td class="p-2 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
+                <td class="p-2 text-slate-600 font-medium">${fila.tipo}</td>
+                <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
+                <td class="p-2 text-center flex flex-col items-center justify-center gap-1.5 border-l border-white/50">
+                    <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] whitespace-nowrap w-full ${claseColor}">${textoDias}</span>
+                    <span class="text-[0.6rem] font-bold text-slate-700 uppercase tracking-tight">${fila.accion}</span>
                 </td>
             </tr>`;
     });
@@ -328,20 +331,23 @@ function renderizarGraficos(dataObra, dataDesvio) {
 
     const opcionesGlobales = {
         responsive: true, maintainAspectRatio: false, 
-        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: {size: 10} } } },
-        scales: { y: { beginAtZero: true, border: {display: false}, grid: { color: '#f1f5f9' }, ticks:{font:{size:9}} }, x: { grid: { display: false }, ticks:{font:{size:9, weight:'bold'}} } } 
+        plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 10} } } },
+        scales: { 
+            y: { beginAtZero: true, border: {display: false}, grid: { color: '#f1f5f9' }, ticks:{font:{size:9}} }, 
+            x: { grid: { display: false }, ticks:{font:{size:8, weight:'bold'}, maxRotation: 45, minRotation: 45} } 
+        } 
     };
 
     if (typeof Chart !== 'undefined') {
         if(ctxObra) chartObra = new Chart(ctxObra, {
             type: 'bar',
-            data: { labels: dataObra.map(d=>d.id), datasets: [{ label: 'OBRAS: Días Vencidos', data: dataObra.map(d=>d.dias), backgroundColor: '#38bdf8', borderRadius: 4 }] },
+            data: { labels: dataObra.map(d=>d.id), datasets: [{ label: 'OBRAS: Días Vencidos (Top 10)', data: dataObra.map(d=>d.dias), backgroundColor: '#38bdf8', borderRadius: 4 }] },
             options: opcionesGlobales
         });
 
         if(ctxDesvio) chartDesvio = new Chart(ctxDesvio, {
             type: 'bar',
-            data: { labels: dataDesvio.map(d=>d.id), datasets: [{ label: 'DESVÍOS: Días Vencidos', data: dataDesvio.map(d=>d.dias), backgroundColor: '#d946ef', borderRadius: 4 }] },
+            data: { labels: dataDesvio.map(d=>d.id), datasets: [{ label: 'DESVÍOS: Días Vencidos (Top 10)', data: dataDesvio.map(d=>d.dias), backgroundColor: '#d946ef', borderRadius: 4 }] },
             options: opcionesGlobales
         });
     }
