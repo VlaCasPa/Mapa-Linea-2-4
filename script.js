@@ -76,7 +76,7 @@ onAuthStateChanged(auth, (user) => {
             iniciarMotorDelMapa(); 
         } else {
             signOut(auth).then(() => {
-                mensajeError.innerText = `Acceso denegado. Comunícate con Vladimir Casas para solicitar permiso de ingreso.`;
+                mensajeError.innerText = `Acceso denegado. Comunícate con la administración para solicitar permiso de ingreso.`;
                 mensajeError.style.display = 'block';
                 btnLoginGoogle.innerHTML = googleBtnHTML;
             });
@@ -96,6 +96,8 @@ let filtroActualID = "Todos";
 let filtroActualEstado = "Todos";
 window.datosGlobales = [];
 
+// ¡IMPORTANTE! Reemplaza "Estado" por el nombre exacto de la cabecera de tu "Columna K" en el Excel
+const COLUMNA_ESTADO_TRAMITE = "Estado"; 
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
 function iniciarMotorDelMapa() {
@@ -123,8 +125,14 @@ function iniciarMotorDelMapa() {
                         if (contenedorIDs) contenedorIDs.appendChild(btn);
                     }
 
-                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                    // Extraer estado administrativo de la Columna K
+                    let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                    
+                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                    
+                    let resObra = formatearDias(item.Aut_Obra_Dias_Restantes, estadoK);
+                    let resDesvio = formatearDias(item.Aut_Desvio_Dias_Restantes, estadoK);
                     
                     let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details"><summary class="popup-summary">💬 Ver comentarios de obra...</summary><div class="popup-comment-text">${item.Aut_Obra_Comentarios}</div></details>` : '';
                     let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details"><summary class="popup-summary">💬 Ver comentarios de desvío...</summary><div class="popup-comment-text">${item.Aut_Desvio_Comentarios}</div></details>` : '';
@@ -136,13 +144,13 @@ function iniciarMotorDelMapa() {
                             <div class="auth-box ${claseObra}">
                                 <span class="auth-title">🚧 Autorización de Obra</span>
                                 Resolución: ${item.Aut_Obra_Resolucion || 'N/A'}<br>
-                                Estado: <b>${formatearDias(item.Aut_Obra_Dias_Restantes)}</b>
+                                Estado: <b>${resObra}</b>
                                 ${comObra}
                             </div>
                             <div class="auth-box ${claseDesvio}">
                                 <span class="auth-title">🚦 Desvío de Tránsito</span>
                                 Resolución: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>
-                                Estado: <b>${formatearDias(item.Aut_Desvio_Dias_Restantes)}</b>
+                                Estado: <b>${resDesvio}</b>
                                 ${comDesvio}
                             </div>
                         </div>
@@ -155,20 +163,39 @@ function iniciarMotorDelMapa() {
                         let markerColor = item.Tipo && item.Tipo.toLowerCase() === "pozo" ? "#475569" : "#2563EB"; 
                         let severidad = 'normal';
                         let aplicaLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
+                        let esTramiteVencido = false;
 
                         let diasObra = parseInt(item.Aut_Obra_Dias_Restantes);
                         let diasDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
                         let alertaPreventiva = ((!isNaN(diasObra) && diasObra >= 0 && diasObra <= 120) || (!isNaN(diasDesvio) && diasDesvio >= 0 && diasDesvio <= 120));
 
+                        // Jerarquía de estados: Culminado -> Trámite -> Crítico/Vencido
                         if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') {
                             markerColor = "#10B981"; severidad = 'culminado'; alertaPreventiva = false;
+                        } else if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
+                            severidad = 'tramite'; 
+                            markerColor = "#A855F7"; 
+                            // Identificar si está en trámite pero su plazo matemático ya expiró
+                            if ((!isNaN(diasObra) && diasObra < 0) || (!isNaN(diasDesvio) && diasDesvio < 0)) {
+                                esTramiteVencido = true;
+                            }
                         } else if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') {
                             markerColor = "#DC2626"; severidad = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido') ? 'vencido' : 'critico'; alertaPreventiva = false;
-                        } else if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') {
-                            severidad = 'tramite';
                         }
                         
-                        let marker = L.circleMarker([lat, lon], { radius: 8, fillColor: markerColor, color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8, className: alertaPreventiva ? 'brillo-preventivo' : '' });
+                        let markerClass = '';
+                        if (alertaPreventiva) markerClass = 'brillo-preventivo';
+                        if (esTramiteVencido) markerClass = 'brillo-tramite-vencido';
+
+                        let marker = L.circleMarker([lat, lon], { 
+                            radius: 8, 
+                            fillColor: markerColor, 
+                            color: esTramiteVencido ? "#DC2626" : "#ffffff", 
+                            weight: esTramiteVencido ? 3 : 2, 
+                            opacity: 1, 
+                            fillOpacity: 0.8, 
+                            className: markerClass 
+                        });
                         marker.bindPopup(popupContent);
                         marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'id-tooltip', offset: [5, 0] });
                         
@@ -210,20 +237,24 @@ function iniciarMotorDelMapa() {
 
             window.datosGlobales.forEach(item => {
                 if (item.ID && item.Latitud) {
-                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                    let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                    let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                    let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
+                    
                     let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
                     let esCritico = (claseObra === 'estado-critico' || claseDesvio === 'estado-critico');
                     let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
                     let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
                     let esLey = (claseObra === 'estado-exonerado' || claseDesvio === 'estado-exonerado'); 
+                    
                     let dObra = parseInt(item.Aut_Obra_Dias_Restantes), dDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
                     let esMenor4 = ((!isNaN(dObra) && dObra >= 0 && dObra <= 120) || (!isNaN(dDesvio) && dDesvio >= 0 && dDesvio <= 120));
 
-                    if (esVencido) vencidos.push(item.ID);
-                    else if (esCritico && !esVencido) criticos.push(item.ID);
-                    if (esMenor4 && !esCulminado && !esVencido) menor4Meses.push(item.ID);
-                    if (esTramite && !esVencido && !esCritico) tramite.push(item.ID);
+                    if (esTramite) tramite.push(item.ID);
+                    else if (esVencido) vencidos.push(item.ID);
+                    else if (esCritico) criticos.push(item.ID);
+                    
+                    if (esMenor4 && !esCulminado && !esVencido && !esTramite) menor4Meses.push(item.ID);
                     if (esCulminado && !esVencido && !esCritico && !esTramite) culminados.push(item.ID);
                     if (esLey) ley31955.push(item.ID); 
                 }
@@ -293,15 +324,18 @@ function iniciarChatInteligente() {
         if (txt.includes('por vencer') || txt.includes('4 meses') || txt.includes('vencer')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
                 let dObra = parseInt(item.Aut_Obra_Dias_Restantes);
                 let dDesvio = parseInt(item.Aut_Desvio_Dias_Restantes);
+                
                 let esVencido = (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido');
                 let esCulminado = (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado');
+                let esTramite = (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite');
                 let esMenor4 = ((!isNaN(dObra) && dObra >= 0 && dObra <= 120) || (!isNaN(dDesvio) && dDesvio >= 0 && dDesvio <= 120));
                 
-                if (esMenor4 && !esCulminado && !esVencido) lista.push(item.ID);
+                if (esMenor4 && !esCulminado && !esVencido && !esTramite) lista.push(item.ID);
             });
             return lista.length > 0 ? `🟡 <b>Estructuras por vencer (< 4 meses):</b><br>${lista.join(', ')}` : `✅ No hay estructuras por vencer.`;
         }
@@ -309,8 +343,9 @@ function iniciarChatInteligente() {
         if (txt.includes('vencid') || txt.includes('critico') || txt.includes('crítico')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
                 if (claseObra === 'estado-vencido' || claseDesvio === 'estado-vencido' || claseObra === 'estado-critico' || claseDesvio === 'estado-critico') lista.push(item.ID);
             });
             return lista.length > 0 ? `🔴 <b>Estructuras Críticas o Vencidas:</b><br>${lista.join(', ')}` : `✅ No hay estructuras críticas ni vencidas.`;
@@ -319,8 +354,9 @@ function iniciarChatInteligente() {
         if (txt.includes('tramite') || txt.includes('trámite')) {
             let lista = [];
             window.datosGlobales.forEach(item => {
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
                 if (claseObra === 'estado-tramite' || claseDesvio === 'estado-tramite') lista.push(item.ID);
             });
             return lista.length > 0 ? `🟣 <b>Estructuras en trámite:</b><br>${lista.join(', ')}` : `No hay estructuras en trámite actualmente.`;
@@ -329,8 +365,9 @@ function iniciarChatInteligente() {
         if (txt.includes('culminad')) {
              let lista = [];
             window.datosGlobales.forEach(item => {
-                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes);
-                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes);
+                let estadoK = item[COLUMNA_ESTADO_TRAMITE] ? item[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+                let claseObra = obtenerClaseEstado(item.Aut_Obra_Dias_Restantes, estadoK);
+                let claseDesvio = obtenerClaseEstado(item.Aut_Desvio_Dias_Restantes, estadoK);
                 if (claseObra === 'estado-culminado' || claseDesvio === 'estado-culminado') lista.push(item.ID);
             });
             return lista.length > 0 ? `🟢 <b>Estructuras culminadas:</b><br>${lista.join(', ')}` : `No hay obras culminadas registradas.`;
@@ -351,8 +388,10 @@ function iniciarChatInteligente() {
 
         let pideTransito = txt.includes('transito') || txt.includes('tránsito') || txt.includes('desvio') || txt.includes('desvío');
         let pideObra = txt.includes('obra') || txt.includes('cerramiento');
-        let resObra = formatearDias(estacionHallada.Aut_Obra_Dias_Restantes);
-        let resDesvio = formatearDias(estacionHallada.Aut_Desvio_Dias_Restantes);
+        
+        let estadoHalladaK = estacionHallada[COLUMNA_ESTADO_TRAMITE] ? estacionHallada[COLUMNA_ESTADO_TRAMITE].toString().trim() : "";
+        let resObra = formatearDias(estacionHallada.Aut_Obra_Dias_Restantes, estadoHalladaK);
+        let resDesvio = formatearDias(estacionHallada.Aut_Desvio_Dias_Restantes, estadoHalladaK);
 
         let respuesta = `<b>📍 ${estacionHallada.ID} - ${estacionHallada.Nombre}</b><br>`;
 
@@ -385,14 +424,20 @@ function iniciarChatInteligente() {
     inputChat.addEventListener('keypress', (e) => { if (e.key === 'Enter') enviarConsulta(); });
 }
 
-// --- FUNCIONES LÓGICAS AUXILIARES ---
-function obtenerClaseEstado(dias) {
+// --- FUNCIONES LÓGICAS AUXILIARES REFACTORIZADAS ---
+function obtenerClaseEstado(dias, estadoK = "") {
+    let estAdmin = estadoK.toLowerCase();
+    let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
+
+    // 1. Prioridad Absoluta: Culminados o En Trámite
+    if (estAdmin === "culminado" || estAdmin === "culminada" || d === "culminado" || d === "culminada") return 'estado-culminado';
+    if (estAdmin === "en trámite" || estAdmin === "en tramite" || d === "en trámite" || d === "en tramite") return 'estado-tramite';
+    if (estAdmin === "exonerado" || d === "exonerado") return 'estado-exonerado';
+    if (estAdmin === "indefinido" || d === "indefinido") return 'estado-indefinido';
+
     if (!dias && dias !== 0) return 'estado-critico'; 
-    let d = dias.toString().trim().toLowerCase();
-    if (d === "exonerado") return 'estado-exonerado';
-    if (d === "indefinido") return 'estado-indefinido';
-    if (d === "en trámite") return 'estado-tramite';
-    if (d === "culminado" || d === "culminada") return 'estado-culminado'; 
+    
+    // 2. Cálculo Cronológico si no hay estado administrativo prioritario
     let numDias = parseInt(dias);
     if (numDias >= 29) return 'estado-optimo';
     if (numDias >= 0 && numDias < 29) return 'estado-critico'; 
@@ -400,15 +445,28 @@ function obtenerClaseEstado(dias) {
     return 'estado-critico';
 }
 
-function formatearDias(dias) {
-    let d = dias.toString().trim().toLowerCase();
-    if (d === "exonerado") return "Amparo Ley N° 31955";
-    if (d === "indefinido") return "Plazo Indefinido";
-    if (d === "en trámite") return "Renovación en Trámite";
-    if (d === "culminado" || d === "culminada") return "Obra Finalizada"; 
+function formatearDias(dias, estadoK = "") {
+    let estAdmin = estadoK.toLowerCase();
+    let d = (dias !== null && dias !== undefined) ? dias.toString().trim().toLowerCase() : "";
+    
+    if (estAdmin === "culminado" || estAdmin === "culminada" || d === "culminado" || d === "culminada") return "Obra Finalizada"; 
+    
+    let textoDias = "";
     let num = parseInt(dias);
-    if (num < 0) return `¡VENCIDO HACE ${Math.abs(num)} DÍAS!`;
-    return `Quedan ${num} días`;
+    if (!isNaN(num)) {
+        if (num < 0) textoDias = `¡Vencido hace ${Math.abs(num)} días!`;
+        else textoDias = `Quedan ${num} días`;
+    }
+
+    if (estAdmin === "en trámite" || estAdmin === "en tramite" || d === "en trámite" || d === "en tramite") {
+        return `Renovación en Trámite ${textoDias ? '(' + textoDias + ')' : ''}`;
+    }
+
+    if (estAdmin === "exonerado" || d === "exonerado") return "Amparo Ley N° 31955";
+    if (estAdmin === "indefinido" || d === "indefinido") return "Plazo Indefinido";
+    
+    if (textoDias) return textoDias;
+    return d;
 }
 
 function aplicarFiltros() {
@@ -417,7 +475,7 @@ function aplicarFiltros() {
         let mostrarPorID = (filtroActualID === "Todos" || obj.datos.ID === filtroActualID);
         let mostrarPorEstado = true;
         if (filtroActualEstado === "Criticos") mostrarPorEstado = (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico');
-        else if (filtroActualEstado === "Menor4Meses") mostrarPorEstado = obj.esMenor4Meses;
+        else if (filtroActualEstado === "Menor4Meses") mostrarPorEstado = obj.esMenor4Meses && obj.estadoSeveridad !== 'tramite';
         else if (filtroActualEstado === "Tramite") mostrarPorEstado = (obj.estadoSeveridad === 'tramite');
         else if (filtroActualEstado === "Culminado") mostrarPorEstado = (obj.estadoSeveridad === 'culminado');
         else if (filtroActualEstado === "Ley31955") mostrarPorEstado = obj.esLey31955; 
@@ -435,10 +493,10 @@ function aplicarFiltros() {
 function actualizarKPIs() {
     let countCriticos = 0, countPorVencer = 0, countLey = 0, countTramite = 0, countCulminados = 0;
     marcadoresGuardados.forEach(obj => {
-        if (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico') countCriticos++;
+        if (obj.estadoSeveridad === 'tramite') countTramite++;
+        else if (obj.estadoSeveridad === 'vencido' || obj.estadoSeveridad === 'critico') countCriticos++;
         else if (obj.esMenor4Meses && obj.estadoSeveridad !== 'culminado') countPorVencer++;
         else if (obj.esLey31955) countLey++;
-        else if (obj.estadoSeveridad === 'tramite') countTramite++;
         else if (obj.estadoSeveridad === 'culminado') countCulminados++;
     });
     if (document.getElementById('kpi-rojo')) document.getElementById('kpi-rojo').innerText = countCriticos;
