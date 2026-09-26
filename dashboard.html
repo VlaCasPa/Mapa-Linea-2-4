@@ -15,11 +15,10 @@
         
         body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         
-        /* Contenedor A4 Estricto y Bloqueado */
         .hoja-a4 { 
             background: white; 
-            width: 794px; /* Ancho exacto A4 a 96dpi */
-            height: 1123px; /* Alto exacto A4 para evitar página 2 en blanco */
+            width: 794px; 
+            height: 1123px; 
             padding: 35px 40px; 
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
             box-sizing: border-box;
@@ -29,7 +28,11 @@
             position: relative;
         }
 
-        .modo-impresion { margin: 0 !important; box-shadow: none !important; border: none !important; }
+        .modo-impresion {
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
 
         .tabla-lean { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;}
         .tabla-lean th { background-color: #f1f5f9; padding: 6px 8px; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-weight: 800; color: #475569; text-align: left; }
@@ -80,9 +83,16 @@
                 </div>
             </div>
 
-            <div class="border border-slate-200 rounded-lg p-4 bg-white mb-6 h-48 flex flex-col">
-                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-2">Estado Crítico de Estructuras (Obras y Desvíos)</h3>
-                <div class="flex-grow relative w-full h-full"><canvas id="chart-ids"></canvas></div>
+            <!-- NUEVA ESTRUCTURA: DOS GRÁFICOS SEPARADOS -->
+            <div class="flex gap-4 mb-6 h-48">
+                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
+                    <h3 class="text-[10px] font-bold text-red-700 uppercase tracking-widest text-center mb-2">Top 10 - Obras (Mayor Atraso)</h3>
+                    <div class="flex-grow relative w-full h-full"><canvas id="chart-obras-criticas"></canvas></div>
+                </div>
+                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
+                    <h3 class="text-[10px] font-bold text-fuchsia-700 uppercase tracking-widest text-center mb-2">Top 10 - Desvíos (Menor Atraso)</h3>
+                    <div class="flex-grow relative w-full h-full"><canvas id="chart-desvios-criticos"></canvas></div>
+                </div>
             </div>
 
             <div class="flex flex-col gap-4">
