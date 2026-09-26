@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f1f5f9; }
         #map { height: 100%; width: 100%; z-index: 1; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
@@ -43,27 +42,24 @@
         .tabla-scroll { max-height: 45vh; overflow-y: auto; overflow-x: auto; }
     </style>
 </head>
-<body class="bg-slate-50 text-gray-800 font-sans antialiased relative lg:h-screen lg:flex lg:flex-col overflow-x-hidden">
+<body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
 
-    <!-- LOGIN -->
     <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-50">
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
             <p class="text-sm text-slate-500 mb-6">Administración Contractual L2/L4</p>
             <div class="space-y-4">
-                <input type="email" id="email-corp" placeholder="Correo Corporativo" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm">
-                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm">
-                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">Ingresar al Sistema</button>
+                <input type="email" id="email-corp" placeholder="Correo Corporativo" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">Ingresar al Sistema</button>
                 <div class="relative flex items-center py-2"><div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink-0 mx-4 text-gray-400 text-xs">Opciones Alternas</span><div class="flex-grow border-t border-gray-300"></div></div>
-                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg">Ingreso Autorizado</button>
+                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-colors">Ingreso Autorizado</button>
             </div>
             <p id="mensaje-error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"></p>
         </div>
     </div>
 
-    <!-- APP OPERATIVA -->
     <div id="app-principal" style="display: none;" class="flex-col w-full max-w-[1920px] mx-auto p-2 md:p-4 h-full overflow-hidden">
-        
         <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 w-full">
             <div class="shrink-0 w-full lg:w-auto pr-24 lg:pr-0 order-1">
                 <h1 class="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-tight">Autorizaciones Municipales</h1>
@@ -78,16 +74,15 @@
                 <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Culminadas</span><span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500">0</span></div>
             </div>
 
-            <!-- BOTONES NAVEGACIÓN -->
             <div class="absolute top-3 right-3 lg:static flex gap-1.5 md:gap-2 z-10 order-2 lg:order-3">
-                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs">📄 Copiar TXT</button>
-                <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs flex items-center">📊 Tablero Analítico</a>
+                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs transition-colors">📄 Copiar TXT</button>
+                <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs flex items-center transition-colors">📊 Dashboard PDF</a>
             </div>
         </header>
 
         <div class="flex flex-col lg:flex-row gap-4 flex-grow min-h-0 overflow-y-auto lg:overflow-y-hidden pb-16 lg:pb-0 w-full">
             <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[65vh] lg:h-full shrink-0">
-                <details open class="group absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-white/95 backdrop-blur-sm p-2 md:p-3 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm transition-all">
+                <details open class="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm p-3 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm">
                     <summary class="text-[0.65rem] font-bold text-slate-500 uppercase cursor-pointer list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">Aislamiento de Riesgo ▼</summary>
                     <div class="flex flex-wrap gap-1.5 mt-2 filtro-seccion">
                         <button class="btn-pill active" data-estado="Todos">Vista General</button>
@@ -101,7 +96,6 @@
                 <div id="map" class="flex-grow z-0 rounded-lg"></div>
             </div>
 
-            <!-- PANEL DERECHO (SE MANTIENEN LAS TABLAS Y GRÁFICOS AQUÍ) -->
             <div class="w-full lg:w-1/3 flex flex-col gap-4 shrink-0 lg:shrink lg:h-full lg:min-h-0 pb-6 lg:pb-0">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink">
                     <div class="p-3 border-b border-gray-200 bg-slate-50 rounded-t-xl">
@@ -137,7 +131,7 @@
 
     <!-- MÓDULO NLP -->
     <div id="panel-chat" class="chat-minimizada">
-        <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold">🤖 Consultor IA BETA</span></div>
+        <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold tracking-wide">🤖 Consultor IA (beta)</span></div>
         <div id="chat-mensajes"><div class="msg-bot">Hola. Consulta estados o vigencias (Ej: "¿Qué obras están por vencer?").</div></div>
         <div id="chat-input-container">
             <input type="text" id="chat-input" placeholder="Pregunta aquí...">
@@ -146,7 +140,7 @@
     </div>
 
     <div class="fixed bottom-2 right-3 z-[9999] opacity-60 pointer-events-none">
-        <span class="text-[0.65rem] text-slate-500 font-medium uppercase bg-white/70 px-2 py-1 rounded">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
+        <span class="text-[0.65rem] text-slate-500 font-medium uppercase bg-white/70 px-2 py-1 rounded shadow-sm">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
     </div>
 
     <script type="module" src="script.js"></script>
