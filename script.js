@@ -82,6 +82,10 @@ function iniciarMotorDelMapa() {
         complete: function(results) {
             let tCriticos=0, tTramite=0, tAlerta=0, tLey=0, tCulminado=0;
             
+            // Reiniciar arreglos por si ocurre una recarga
+            window.dataObrasGlobal = [];
+            window.dataDesviosGlobal = [];
+
             results.data.forEach(item => {
                 if (item.Latitud && item.Longitud && item.ID) {
                     let evalObra = evaluarRiesgo(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
@@ -95,7 +99,6 @@ function iniciarMotorDelMapa() {
                     if (sev === 'LEY31955') tLey++;
                     if (sev === 'CULMINADO') tCulminado++;
 
-                    // Llenar listas separadas con TODOS los datos
                     window.dataObrasGlobal.push({ id: item.ID, resolucion: item.Aut_Obra_Resolucion, dias: evalObra.diasValor, estado: evalObra.estadoRiesgo, orig: item.Aut_Obra_Dias_Restantes });
                     window.dataDesviosGlobal.push({ id: item.ID, resolucion: item.Aut_Desvio_Resolucion, dias: evalDesvio.diasValor, estado: evalDesvio.estadoRiesgo, orig: item.Aut_Desvio_Dias_Restantes });
 
@@ -162,6 +165,7 @@ function evaluarRiesgo(dias, comentarios) {
     else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } 
     else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; }
     else if (isNaN(dNum) && !esC && !esT && !esE) { estado = 'INDEFINIDO'; accion = 'Regularizar'; }
+    
     return { diasValor: isNaN(dNum) ? null : dNum, esTramite: esT, estadoRiesgo: estado, accion: accion };
 }
 
@@ -211,9 +215,10 @@ function renderizarTablasCompletas(data, tableId) {
     const tbody = document.getElementById(tableId);
     if (!tbody) return;
     
-    // Jerarquía visual: Criticos (1), Tramites (2), Alerta (3), Vigente (4), Ley (5), Culminado (6)
     const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 4, 'VIGENTE': 5, 'INDEFINIDO': 6, 'LEY31955': 7, 'CULMINADO': 8 };
-    data.sort((a, b) => jerarquia[a.estado] - jerarquia[b.estado] || a.dias - b.dias);
+    
+    // Corrección matemática robusta para evitar NaNs que colapsan el renderizado
+    data.sort((a, b) => (jerarquia[a.estado] || 99) - (jerarquia[b.estado] || 99) || (a.dias || 0) - (b.dias || 0));
 
     tbody.innerHTML = '';
     data.forEach(fila => {
