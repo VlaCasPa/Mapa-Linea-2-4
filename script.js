@@ -81,10 +81,7 @@ function iniciarMotorDelMapa() {
         download: true, header: true,
         complete: function(results) {
             let tCriticos=0, tTramite=0, tAlerta=0, tLey=0, tCulminado=0;
-            
-            // Reiniciar arreglos por si ocurre una recarga
-            window.dataObrasGlobal = [];
-            window.dataDesviosGlobal = [];
+            window.dataObrasGlobal = []; window.dataDesviosGlobal = [];
 
             results.data.forEach(item => {
                 if (item.Latitud && item.Longitud && item.ID) {
@@ -216,8 +213,6 @@ function renderizarTablasCompletas(data, tableId) {
     if (!tbody) return;
     
     const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 4, 'VIGENTE': 5, 'INDEFINIDO': 6, 'LEY31955': 7, 'CULMINADO': 8 };
-    
-    // Corrección matemática robusta para evitar NaNs que colapsan el renderizado
     data.sort((a, b) => (jerarquia[a.estado] || 99) - (jerarquia[b.estado] || 99) || (a.dias || 0) - (b.dias || 0));
 
     tbody.innerHTML = '';
@@ -232,7 +227,14 @@ function renderizarTablasCompletas(data, tableId) {
             etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`;
             colorFila = "bg-fuchsia-50/40";
         } else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span>`;
+            let fechaVence = new Date();
+            fechaVence.setDate(fechaVence.getDate() + (fila.dias || 0));
+            let fechaStr = fechaVence.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            etiquetaHTML = `<div class="flex flex-col w-full items-center">
+                <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span>
+                <span class="text-[0.55rem] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Vence: ${fechaStr}</span>
+            </div>`;
         } else if (fila.estado === 'LEY31955') {
             etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-orange-500 text-white">Ley 31955</span>`;
         } else if (fila.estado === 'CULMINADO') {
