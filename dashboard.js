@@ -16,7 +16,8 @@ window.addEventListener('DOMContentLoaded', () => {
             let jur = { obraLima: 0, obraCallao: 0, desvioLima: 0, desvioCallao: 0 };
             let look = { d30: 0, d60: 0, d90: 0, d120: 0 };
             
-            let tablaUrgente = [], tablaObraTramite = [], tablaDesvioTramite = [], chartIdsData = [];
+            let tablaUrgente = [], tablaObraTramite = [], tablaDesvioTramite = [];
+            let criticosObras = [], criticosDesvios = [];
 
             results.data.forEach(item => {
                 if (!item.ID) return;
@@ -61,12 +62,16 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (evO.estado === 'TRAMITE' && evO.dNum < 0) tablaObraTramite.push({ id: item.ID, res: item.Aut_Obra_Resolucion, dias: evO.dNum });
                 if (evD.estado === 'TRAMITE' && evD.dNum < 0) tablaDesvioTramite.push({ id: item.ID, res: item.Aut_Desvio_Resolucion, dias: evD.dNum });
 
-                let severidadID = Math.min((evO.dNum !== null ? evO.dNum : 999), (evD.dNum !== null ? evD.dNum : 999));
-                if (severidadID < 0) {
-                    chartIdsData.push({ id: item.ID, minDias: severidadID, color: (evO.estado === 'CRITICO' || evD.estado === 'CRITICO') ? '#dc2626' : '#c026d3' });
+                // Acumular arreglos separados para el gráfico general de Top Obras y Desvíos
+                if (evO.estado === 'CRITICO' || evO.estado === 'TRAMITE') {
+                    if (evO.dNum !== null && evO.dNum < 0) criticosObras.push({ id: item.ID, dias: Math.abs(evO.dNum), tipo: 'Obra', color: '#dc2626' }); // Rojo Obra
+                }
+                if (evD.estado === 'CRITICO' || evD.estado === 'TRAMITE') {
+                    if (evD.dNum !== null && evD.dNum < 0) criticosDesvios.push({ id: item.ID, dias: Math.abs(evD.dNum), tipo: 'Desvío', color: '#c026d3' }); // Fucsia Desvío
                 }
             });
 
+            // 1. GRÁFICO DOUGHNUT (Estado Global)
             let totalGeneral = st.critico + st.tramite + st.alerta + st.ley + st.culminado;
             new Chart(document.getElementById('chart-portafolio'), {
                 type: 'doughnut',
@@ -88,6 +93,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            // 2. GRÁFICO BARRAS APILADAS CON PORCENTAJES (Jurisdicción)
             new Chart(document.getElementById('chart-jurisdiccion'), {
                 type: 'bar',
                 data: {
@@ -99,11 +105,21 @@ window.addEventListener('DOMContentLoaded', () => {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false, indexAxis: 'y', 
-                    plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 8} } }, datalabels: { display: false } },
+                    plugins: { 
+                        legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 8} } },
+                        datalabels: { 
+                            display: true, color: 'white', font: { weight: 'bold', size: 8 },
+                            formatter: (value, ctx) => {
+                                let totalFila = ctx.chart.data.datasets[0].data[ctx.dataIndex] + ctx.chart.data.datasets[1].data[ctx.dataIndex];
+                                return (totalFila > 0 && value > 0) ? Math.round((value / totalFila) * 100) + '%' : '';
+                            }
+                        }
+                    },
                     scales: { x: { stacked: true, display: false }, y: { stacked: true, ticks: { font: { size: 9, weight: 'bold' } } } }
                 }
             });
 
+            // 3. GRÁFICO LOOKAHEAD
             new Chart(document.getElementById('chart-lookahead'), {
                 type: 'bar',
                 data: {
@@ -117,21 +133,32 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            chartIdsData.sort((a, b) => a.minDias - b.minDias); 
-            let top15Ids = chartIdsData.slice(0, 15);
+            // 4. GRÁFICO MATRIZ ID UNIFICADO (10 Obras y 10 Desvíos diferenciados)
+            let top10Obras = criticosObras.sort((a,b) => b.dias - a.dias).slice(0, 10);
+            let top10Desvios = criticosDesvios.sort((a,b) => b.dias - a.dias).slice(0, 10);
+            let dataUnificada = [...top10Obras, ...top10Desvios].sort((a,b) => b.dias - a.dias);
+
             new Chart(document.getElementById('chart-ids'), {
                 type: 'bar',
                 data: {
-                    labels: top15Ids.map(d => d.id),
-                    datasets: [{ data: top15Ids.map(d => Math.abs(d.minDias)), backgroundColor: top15Ids.map(d => d.color), borderRadius: 3 }]
+                    labels: dataUnificada.map(d => d.id),
+                    datasets: [{ data: dataUnificada.map(d => d.dias), backgroundColor: dataUnificada.map(d => d.color), borderRadius: 3 }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', font: { size: 8, weight: 'bold' }, formatter: (v) => v+'d' } },
-                    scales: { y: { display: false, suggestedMax: Math.abs(top15Ids[0]?.minDias || 100) + 50 }, x: { grid: { display: false }, ticks: { font: { size: 8, weight: 'bold' } } } }
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: { callbacks: { label: (ctx) => ` ${dataUnificada[ctx.dataIndex].tipo}: ${ctx.raw} días vencidos` } },
+                        datalabels: { anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, formatter: (v) => v+'d' } 
+                    },
+                    scales: { 
+                        y: { display: false, suggestedMax: dataUnificada[0]?.dias + 50 }, 
+                        x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } 
+                    }
                 }
             });
 
+            // 5. LLENAR TABLAS TÁCTICAS
             const poblarTabla = (idTbody, data, isUrgente) => {
                 const tb = document.querySelector(`#${idTbody} tbody`);
                 data.sort((a, b) => a.dias - b.dias).slice(0, 5).forEach(d => { 
@@ -162,13 +189,7 @@ window.addEventListener('DOMContentLoaded', () => {
             margin: 0,
             filename: `Informe_Estrategico_L2L4_${new Date().getTime()}.pdf`,
             image: { type: 'jpeg', quality: 1.0 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
-                scrollY: 0, 
-                scrollX: 0,
-                windowWidth: 794 
-            }, 
+            html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794 }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
