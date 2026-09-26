@@ -91,7 +91,7 @@ window.addEventListener('DOMContentLoaded', () => {
             new Chart(document.getElementById('chart-jurisdiccion'), {
                 type: 'bar',
                 data: {
-                    labels: ['Obras Físicas', 'Desvíos'],
+                    labels: ['Obras', 'Desvíos'],
                     datasets: [
                         { label: 'Lima', data: [jur.obraLima, jur.desvioLima], backgroundColor: '#3b82f6', borderRadius: 2 },
                         { label: 'Callao', data: [jur.obraCallao, jur.desvioCallao], backgroundColor: '#f59e0b', borderRadius: 2 }
