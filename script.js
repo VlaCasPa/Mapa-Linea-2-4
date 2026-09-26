@@ -1,148 +1,304 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Operativo - Línea 2 y Ramal L4</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <style>
-        body { background-color: #f1f5f9; }
-        #map { height: 100%; width: 100%; z-index: 1; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
-        .mapa-google-gris { filter: grayscale(100%) brightness(1.15) contrast(0.85) opacity(0.85); z-index: 0 !important; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .brillo-preventivo { animation: pulso-amarillo 2s infinite; stroke: #f59e0b !important; }
-        .brillo-tramite-vencido { animation: pulso-rojo 2s infinite; stroke: #dc2626 !important; }
-        @keyframes pulso-amarillo { 0% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); } }
-        @keyframes pulso-rojo { 0% { filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.8)); } }
-        .btn-pill { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .btn-pill.active { background: #1e293b; color: white; border-color: #1e293b; }
-        .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; z-index: 1001; }
-        .popup-container { font-family: 'Segoe UI', sans-serif; padding: 12px; }
-        .auth-box { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 8px; margin-bottom: 8px; border-radius: 4px; font-size: 0.85rem;}
-        .estado-critico-sin-accion { border-left-color: #dc2626; background-color: #fef2f2; }
-        .estado-critico-en-tramite { border-left-color: #c026d3; background-color: #fdf4ff; }
-        .estado-alerta { border-left-color: #f59e0b; background-color: #fffbeb; }
-        .estado-tramite-plazo { border-left-color: #3b82f6; background-color: #eff6ff; }
-        .estado-exonerado { border-left-color: #f97316; background-color: #fff7ed; }
-        .estado-culminado { border-left-color: #10b981; background-color: #ecfdf5; }
-        #panel-chat { position: fixed; bottom: 20px; left: 20px; width: calc(100% - 40px); max-width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; transition: height 0.3s ease; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb;}
-        .chat-minimizada { height: 42px; }
-        .chat-abierta { height: 400px; }
-        #chat-header { background: #1e293b; color: white; padding: 10px 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;}
-        #chat-mensajes { flex-grow: 1; overflow-y: auto; padding: 14px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;}
-        .msg-user { align-self: flex-end; background: #2563eb; color: white; padding: 8px 12px; border-radius: 12px 12px 0 12px; font-size: 0.85rem; max-width: 85%; }
-        .msg-bot { align-self: flex-start; background: white; color: #1e293b; padding: 8px 12px; border-radius: 12px 12px 12px 0; font-size: 0.85rem; border: 1px solid #e2e8f0; max-width: 85%; }
-        #chat-input-container { display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0; }
-        #chat-input { flex-grow: 1; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; outline: none; font-size: 0.85rem; }
-        #btn-enviar-chat { background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;}
-        .tabla-scroll { max-height: 45vh; overflow-y: auto; overflow-x: auto; }
-    </style>
-</head>
-<body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-    <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-50">
-        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
-            <p class="text-sm text-slate-500 mb-6">Administración Contractual L2/L4</p>
-            <div class="space-y-4">
-                <input type="email" id="email-corp" placeholder="Correo Corporativo" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
-                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
-                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">Ingresar al Sistema</button>
-                <div class="relative flex items-center py-2"><div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink-0 mx-4 text-gray-400 text-xs">Opciones Alternas</span><div class="flex-grow border-t border-gray-300"></div></div>
-                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg transition-colors">Ingreso Autorizado</button>
-            </div>
-            <p id="mensaje-error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"></p>
-        </div>
-    </div>
+const firebaseConfig = {
+    apiKey: "AIzaSyAalo8_88axc-5QAGT8Winp72A1utZwzZg",
+    authDomain: "cerramientos-l2l4-b157e.firebaseapp.com",
+    projectId: "cerramientos-l2l4-b157e",
+    storageBucket: "cerramientos-l2l4-b157e.firebasestorage.app",
+    messagingSenderId: "21699345602",
+    appId: "1:21699345602:web:f715c1203b7516f0cccf5b",
+    measurementId: "G-GRNDM7PZ55"
+};
 
-    <div id="app-principal" style="display: none;" class="flex-col w-full max-w-[1920px] mx-auto p-2 md:p-4 h-full overflow-hidden">
-        <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 w-full">
-            <div class="shrink-0 w-full lg:w-auto pr-24 lg:pr-0 order-1">
-                <h1 class="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-tight">Autorizaciones Municipales</h1>
-                <p class="text-[0.65rem] md:text-xs text-slate-500 font-semibold mt-0.5">Línea 2 y Ramal L4 - Consorcio Constructor</p>
-            </div>
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app); 
+const provider = new GoogleAuthProvider();
+let usuarioActual = "anonimo"; 
+
+const btnLoginGoogle = document.getElementById('btn-login-google');
+const btnLoginCorp = document.getElementById('btn-login-corp');
+const inputEmailCorp = document.getElementById('email-corp');
+const inputPassCorp = document.getElementById('pass-corp');
+const mensajeError = document.getElementById('mensaje-error');
+const pantallaBloqueo = document.getElementById('pantalla-bloqueo');
+const appPrincipal = document.getElementById('app-principal');
+
+// Variable para restaurar el diseño del botón de Google en caso de error
+const googleBtnHTML = `<svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Ingresar con Google`;
+
+// Persistencia libre de bloqueos
+setPersistence(auth, browserLocalPersistence).catch(console.warn);
+
+btnLoginGoogle.addEventListener('click', () => { 
+    mensajeError.style.display = 'none';
+    btnLoginGoogle.innerHTML = "Conectando...";
+    signInWithPopup(auth, provider).catch((err) => { 
+        console.error(err);
+        mensajeError.innerText = "Fallo de red o ventana emergente bloqueada."; 
+        mensajeError.style.display = 'block'; 
+        btnLoginGoogle.innerHTML = googleBtnHTML; // Restaura el icono
+    }); 
+});
+
+btnLoginCorp.addEventListener('click', () => { 
+    if(!inputEmailCorp.value || !inputPassCorp.value) return;
+    mensajeError.style.display = 'none';
+    btnLoginCorp.innerHTML = "Validando...";
+    signInWithEmailAndPassword(auth, inputEmailCorp.value.trim(), inputPassCorp.value).catch(() => { 
+        mensajeError.innerText = "Credenciales incorrectas."; 
+        mensajeError.style.display = 'block'; 
+        btnLoginCorp.innerHTML = "Ingresar al Sistema";
+    }); 
+});
+
+onAuthStateChanged(auth, (user) => {
+    if (user && (user.email.endsWith("@ccmetrolima.com") || ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnoriega.arq@gmail.com", "supervisor@gmail.com"].includes(user.email.toLowerCase()))) {
+        usuarioActual = user.email.toLowerCase();
+        pantallaBloqueo.style.display = 'none';
+        appPrincipal.style.display = 'flex';
+        iniciarMotorDelMapa(); 
+    } else {
+        pantallaBloqueo.style.display = 'flex';
+        appPrincipal.style.display = 'none';
+    }
+});
+
+let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
+window.dataSemaforoActual = [];
+let chartObra = null, chartDesvio = null; 
+const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
+
+const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
+function iniciarMotorDelMapa() {
+    if (map) return; 
+    map = L.map('map', { zoomControl: false }).setView([-12.055, -77.050], 12);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'], className: 'mapa-google-gris' }).addTo(map);
+    grupoMarcadores = L.featureGroup().addTo(map);
+
+    Papa.parse(urlCSV, {
+        download: true, header: true,
+        complete: function(results) {
+            let tCriticos=0, tTramite=0, tAlerta=0, tLey=0, tCulminado=0;
+            let rObra=[], rDesvio=[];
             
-            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar justify-between lg:justify-end gap-1.5 md:gap-4 items-center shrink-0 order-3 lg:order-2">
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Sin Acción</span><span id="kpi-rojo" class="text-xl md:text-2xl font-black text-red-600">0</span></div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">En Trámite</span><span id="kpi-morado" class="text-xl md:text-2xl font-black text-fuchsia-600">0</span></div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">&lt; 4 Meses</span><span id="kpi-amarillo" class="text-xl md:text-2xl font-black text-yellow-500">0</span></div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Ley 31955</span><span id="kpi-naranja" class="text-xl md:text-2xl font-black text-orange-500">0</span></div>
-                <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Culminadas</span><span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500">0</span></div>
-            </div>
+            results.data.forEach(item => {
+                if (item.Latitud && item.Longitud && item.ID) {
+                    let evalObra = evaluarRiesgo(item.Aut_Obra_Dias_Restantes, item.Aut_Obra_Comentarios);
+                    let evalDesvio = evaluarRiesgo(item.Aut_Desvio_Dias_Restantes, item.Aut_Desvio_Comentarios);
+                    
+                    if (evalObra.estadoRiesgo === 'CRITICO_SIN_ACCION' || evalDesvio.estadoRiesgo === 'CRITICO_SIN_ACCION') tCriticos++;
+                    if (evalObra.esTramite || evalDesvio.esTramite) tTramite++;
+                    
+                    let sev = determinarSeveridadVisual(evalObra, evalDesvio);
+                    if (sev === 'ALERTA_TEMPRANA') tAlerta++;
+                    if (sev === 'LEY31955') tLey++;
+                    if (sev === 'CULMINADO') tCulminado++;
 
-            <div class="absolute top-3 right-3 lg:static flex gap-1.5 md:gap-2 z-10 order-2 lg:order-3">
-                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs transition-colors">📄 Copiar TXT</button>
-                <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs flex items-center transition-colors">📊 Dashboard PDF</a>
-            </div>
-        </header>
+                    [ { tipo: 'Obra', ev: evalObra, res: item.Aut_Obra_Resolucion }, { tipo: 'Desvío', ev: evalDesvio, res: item.Aut_Desvio_Resolucion } ].forEach(x => {
+                        if (['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE', 'ALERTA_TEMPRANA'].includes(x.ev.estadoRiesgo)) {
+                            window.dataSemaforoActual.push({ id: item.ID, tipo: x.tipo, resolucion: x.res, dias: x.ev.diasValor, estado: x.ev.estadoRiesgo, accion: x.ev.accion });
+                        }
+                        if (x.ev.esTramite && x.ev.diasValor !== null && x.ev.diasValor < 0) {
+                            if(x.tipo === 'Obra') rObra.push({id: item.ID, dias: Math.abs(x.ev.diasValor)});
+                            else rDesvio.push({id: item.ID, dias: Math.abs(x.ev.diasValor)});
+                        }
+                    });
 
-        <div class="flex flex-col lg:flex-row gap-4 flex-grow min-h-0 overflow-y-auto lg:overflow-y-hidden pb-16 lg:pb-0 w-full">
-            <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[65vh] lg:h-full shrink-0">
-                <details open class="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm p-3 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm">
-                    <summary class="text-[0.65rem] font-bold text-slate-500 uppercase cursor-pointer list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">Aislamiento de Riesgo ▼</summary>
-                    <div class="flex flex-wrap gap-1.5 mt-2 filtro-seccion">
-                        <button class="btn-pill active" data-estado="Todos">Vista General</button>
-                        <button class="btn-pill" data-estado="Criticos">🔴 Sin Acción</button>
-                        <button class="btn-pill" data-estado="Tramite">🟣 En Trámite</button>
-                        <button class="btn-pill" data-estado="Menor4Meses">🟡 Alerta Preventiva</button>
-                        <button class="btn-pill" data-estado="Ley31955">🟠 Ley N° 31955</button>
-                        <button class="btn-pill" data-estado="Culminado">🟢 Culminadas</button>
-                    </div>
-                </details>
-                <div id="map" class="flex-grow z-0 rounded-lg"></div>
-            </div>
+                    let lat = parseFloat(item.Latitud.toString().replace(/,/g, '.'));
+                    let lon = parseFloat(item.Longitud.toString().replace(/,/g, '.'));
+                    if (!isNaN(lat)) {
+                        let marker = L.circleMarker([lat, lon], { radius: 7, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.95 });
+                        aplicarEstiloMarcador(marker, sev);
+                        
+                        let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Obra_Comentarios}</div></details>` : '';
+                        let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Desvio_Comentarios}</div></details>` : '';
 
-            <div class="w-full lg:w-1/3 flex flex-col gap-4 shrink-0 lg:shrink lg:h-full lg:min-h-0 pb-6 lg:pb-0">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink">
-                    <div class="p-3 border-b border-gray-200 bg-slate-50 rounded-t-xl">
-                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Semáforo de Riesgos</h3>
-                    </div>
-                    <div class="tabla-scroll flex-grow relative bg-white rounded-b-xl">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-white text-slate-500 sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th class="p-2.5 font-bold uppercase tracking-wider w-12">ID</th>
-                                    <th class="p-2.5 font-bold uppercase tracking-wider">Trámite</th>
-                                    <th class="p-2.5 font-bold uppercase tracking-wider">Resolución Base</th>
-                                    <th class="p-2.5 font-bold uppercase tracking-wider text-center w-28">Contingencia</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-semaforo-riesgos" class="divide-y divide-gray-100"></tbody>
-                        </table>
-                    </div>
-                </div>
+                        marker.bindPopup(`
+                            <div class="popup-container">
+                                <h3 class="popup-title">${item.ID}: ${item.Nombre}</h3>
+                                <div class="popup-subtitle">📍 ${item.Municipalidad} | ${item.Linea} - ${item.Tipo}</div>
+                                <div class="auth-box ${obtenerClaseCSS(evalObra.estadoRiesgo)}"><span class="font-bold block mb-1 text-slate-700">🚧 Autorización de Obra</span>Res: ${item.Aut_Obra_Resolucion || 'N/A'}<br>Estado: <b class="text-slate-800">${formatearTextoPopup(evalObra)}</b>${comObra}</div>
+                                <div class="auth-box ${obtenerClaseCSS(evalDesvio.estadoRiesgo)}"><span class="font-bold block mb-1 text-slate-700">🚦 Desvío de Tránsito</span>Res: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>Estado: <b class="text-slate-800">${formatearTextoPopup(evalDesvio)}</b>${comDesvio}</div>
+                            </div>
+                        `);
+                        marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/90 px-1 rounded shadow-sm text-[0.65rem]' });
+                        marcadoresGuardados.push({ marcador: marker, datos: item, evalObra: evalObra, evalDesvio: evalDesvio, severidadGlobal: sev });
+                    }
+                }
+            });
 
-                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 flex flex-col h-[450px] lg:h-1/2 shrink-0">
-                    <div class="mb-2 shrink-0">
-                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Días en Trámite (Top 10)</h3>
-                    </div>
-                    <div class="flex flex-col gap-3 h-full min-h-0">
-                        <div class="w-full relative h-1/2"><canvas id="grafico-ranking-obra"></canvas></div>
-                        <div class="w-full relative h-1/2"><canvas id="grafico-ranking-desvio"></canvas></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            document.getElementById('kpi-rojo').innerText = tCriticos;
+            document.getElementById('kpi-morado').innerText = tTramite;
+            document.getElementById('kpi-amarillo').innerText = tAlerta;
+            document.getElementById('kpi-naranja').innerText = tLey;
+            document.getElementById('kpi-verde').innerText = tCulminado;
 
-    <!-- MÓDULO NLP -->
-    <div id="panel-chat" class="chat-minimizada">
-        <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold tracking-wide">🤖 Consultor IA (beta)</span></div>
-        <div id="chat-mensajes"><div class="msg-bot">Hola. Consulta estados o vigencias (Ej: "¿Qué obras están por vencer?").</div></div>
-        <div id="chat-input-container">
-            <input type="text" id="chat-input" placeholder="Pregunta aquí...">
-            <button id="btn-enviar-chat">Enviar</button>
-        </div>
-    </div>
+            renderizarTablaSemaforo(window.dataSemaforoActual);
+            rObra.sort((a, b) => b.dias - a.dias); rDesvio.sort((a, b) => b.dias - a.dias);
+            renderizarGraficos(rObra.slice(0, 10), rDesvio.slice(0, 10));
 
-    <div class="fixed bottom-2 right-3 z-[9999] opacity-60 pointer-events-none">
-        <span class="text-[0.65rem] text-slate-500 font-medium uppercase bg-white/70 px-2 py-1 rounded shadow-sm">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
-    </div>
+            document.querySelectorAll('.filtro-seccion .btn-pill').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filtro-seccion .btn-pill').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    filtroActualEstado = e.target.getAttribute('data-estado');
+                    aplicarFiltros();
+                });
+            });
+            aplicarFiltros(); 
+            configurarBotonTXT();
+            iniciarChatInteligente();
+        }
+    });
+}
 
-    <script type="module" src="script.js"></script>
-</body>
-</html>
+function evaluarRiesgo(dias, comentarios) {
+    let dNum = parseInt(dias); let dStr = normalizarTexto(dias); let tc = normalizarTexto(comentarios);
+    let esC = dStr === "culminado" || tc.includes("culminado");
+    let esT = dStr === "en tramite" || tc.includes("tramite");
+    let esE = dStr === "exonerado" || tc.includes("exonerado");
+    let vMat = !isNaN(dNum) && dNum < 0; let aTemp = !isNaN(dNum) && dNum >= 0 && dNum <= 120;
+    
+    let estado = 'VIGENTE', accion = 'Monitorear';
+    if (esC) { estado = 'CULMINADO'; accion = 'Archivar'; }
+    else if (esE) { estado = 'LEY31955'; accion = 'Archivar'; } 
+    else if (vMat && !esT) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } 
+    else if (vMat && esT) { estado = 'CRITICO_EN_TRAMITE'; accion = 'Insistir Entidad'; } 
+    else if (aTemp && !esT) { estado = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } 
+    else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } 
+    else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; }
+    return { diasValor: isNaN(dNum) ? null : dNum, esTramite: esT, estadoRiesgo: estado, accion: accion };
+}
+
+function obtenerClaseCSS(estado) {
+    const mapa = { 'CRITICO_SIN_ACCION': 'estado-critico-sin-accion', 'CRITICO_EN_TRAMITE': 'estado-critico-en-tramite', 'ALERTA_TEMPRANA': 'estado-alerta', 'TRAMITE_EN_PLAZO': 'estado-tramite-plazo', 'LEY31955': 'estado-exonerado', 'CULMINADO': 'estado-culminado', 'INDEFINIDO': 'estado-exonerado' };
+    return mapa[estado] || 'estado-tramite-plazo';
+}
+
+function formatearTextoPopup(ev) {
+    if (ev.estadoRiesgo === 'CULMINADO') return "Finalizada";
+    if (ev.estadoRiesgo === 'LEY31955') return "Ley N° 31955";
+    if (ev.estadoRiesgo === 'INDEFINIDO') return "Indefinido";
+    let textoDias = ev.diasValor !== null ? (ev.diasValor < 0 ? `Vencido (${Math.abs(ev.diasValor)}d)` : `Quedan ${ev.diasValor}d`) : "";
+    if (ev.estadoRiesgo === 'CRITICO_EN_TRAMITE' || ev.estadoRiesgo === 'TRAMITE_EN_PLAZO') return `En Trámite ${textoDias ? '- ' + textoDias : ''}`;
+    return textoDias || ev.diasOriginal || "S/D";
+}
+
+function aplicarEstiloMarcador(marker, estado) {
+    marker.getElement()?.classList.remove('brillo-preventivo', 'brillo-tramite-vencido');
+    if (estado === 'CRITICO_SIN_ACCION') marker.setStyle({ fillColor: "#dc2626", color: "#ffffff" });
+    else if (estado === 'CRITICO_EN_TRAMITE') { marker.setStyle({ fillColor: "#c026d3", color: "#dc2626" }); marker.getElement()?.classList.add('brillo-tramite-vencido'); }
+    else if (estado === 'ALERTA_TEMPRANA') { marker.setStyle({ fillColor: "#f59e0b", color: "#ffffff" }); marker.getElement()?.classList.add('brillo-preventivo'); }
+    else if (estado === 'LEY31955') marker.setStyle({ fillColor: "#f97316", color: "#ffffff" });
+    else marker.setStyle({ fillColor: "#10b981", color: "#ffffff" });
+}
+
+function determinarSeveridadVisual(o, d) {
+    const p = { 'CRITICO_SIN_ACCION': 5, 'CRITICO_EN_TRAMITE': 4, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 2, 'LEY31955': 1, 'VIGENTE': 0, 'CULMINADO': -1 };
+    return p[o.estadoRiesgo] > p[d.estadoRiesgo] ? o.estadoRiesgo : d.estadoRiesgo;
+}
+
+function aplicarFiltros() {
+    grupoMarcadores.clearLayers(); let boundsCount = 0;
+    marcadoresGuardados.forEach(obj => {
+        let m = true;
+        if (filtroActualEstado === "Criticos") m = (obj.severidadGlobal === 'CRITICO_SIN_ACCION');
+        else if (filtroActualEstado === "Tramite") m = (obj.evalObra.esTramite || obj.evalDesvio.esTramite);
+        else if (filtroActualEstado === "Menor4Meses") m = (obj.severidadGlobal === 'ALERTA_TEMPRANA');
+        else if (filtroActualEstado === "Ley31955") m = (obj.severidadGlobal === 'LEY31955');
+        else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
+        if (m) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
+    });
+    if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
+}
+
+function renderizarTablaSemaforo(data) {
+    const tbody = document.getElementById('tabla-semaforo-riesgos');
+    if (!tbody) return;
+    const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3 };
+    data.sort((a, b) => jerarquia[a.estado] - jerarquia[b.estado] || a.dias - b.dias);
+
+    tbody.innerHTML = '';
+    data.forEach(fila => {
+        let claseColor = fila.estado === 'CRITICO_SIN_ACCION' ? 'bg-red-500 text-white' : fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-slate-800';
+        let textoDias = fila.dias < 0 ? `${fila.dias} días (Vencido)` : `${fila.dias} días (Alerta)`;
+        let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50/50' : 'bg-fuchsia-50/40';
+
+        tbody.innerHTML += `
+            <tr class="border-b border-white hover:bg-slate-100 transition-colors ${bgFila}">
+                <td class="p-2 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
+                <td class="p-2 text-slate-600 font-medium">${fila.tipo}</td>
+                <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
+                <td class="p-2 text-center flex flex-col items-center justify-center gap-1.5 border-l border-white/50">
+                    <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] whitespace-nowrap w-full ${claseColor}">${textoDias}</span>
+                    <span class="text-[0.6rem] font-bold text-slate-700 uppercase tracking-tight">${fila.accion}</span>
+                </td>
+            </tr>`;
+    });
+}
+
+function renderizarGraficos(dataObra, dataDesvio) {
+    const ctxObra = document.getElementById('grafico-ranking-obra');
+    const ctxDesvio = document.getElementById('grafico-ranking-desvio');
+    if (chartObra) chartObra.destroy(); if (chartDesvio) chartDesvio.destroy();
+
+    const op = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 10} } } }, scales: { y: { beginAtZero: true, border: {display: false}, grid: { color: '#f1f5f9' }, ticks:{font:{size:9}} }, x: { grid: { display: false }, ticks:{font:{size:8, weight:'bold'}, maxRotation: 45, minRotation: 45} } } };
+    if (typeof Chart !== 'undefined') {
+        if(ctxObra) chartObra = new Chart(ctxObra, { type: 'bar', data: { labels: dataObra.map(d=>d.id), datasets: [{ label: 'OBRAS: Días Vencidos', data: dataObra.map(d=>d.dias), backgroundColor: '#38bdf8', borderRadius: 4 }] }, options: op });
+        if(ctxDesvio) chartDesvio = new Chart(ctxDesvio, { type: 'bar', data: { labels: dataDesvio.map(d=>d.id), datasets: [{ label: 'DESVÍOS: Días Vencidos', data: dataDesvio.map(d=>d.dias), backgroundColor: '#d946ef', borderRadius: 4 }] }, options: op });
+    }
+}
+
+function configurarBotonTXT() {
+    document.getElementById('btn-reporte-txt').addEventListener('click', (e) => {
+        let t = `📊 *REPORTE PERMISOS - L2/L4*\n📅 ${new Date().toLocaleString('es-PE')}\n\n`;
+        let ob = window.dataSemaforoActual.filter(d => d.tipo === 'Obra');
+        let de = window.dataSemaforoActual.filter(d => d.tipo === 'Desvío');
+        t += `🚧 *OBRAS CRÍTICAS (${ob.length}):*\n`; ob.forEach(o => t += `- ${o.id}: Vencido ${Math.abs(o.dias)}d.\n`);
+        t += `\n🚦 *DESVÍOS CRÍTICOS (${de.length}):*\n`; de.forEach(d => t += `- ${d.id}: Vencido ${Math.abs(d.dias)}d.\n`);
+        navigator.clipboard.writeText(t).then(() => { let ori = e.target.innerHTML; e.target.innerHTML = "✅ Copiado"; setTimeout(() => e.target.innerHTML = ori, 2000); });
+    });
+}
+
+function iniciarChatInteligente() {
+    const chat = document.getElementById('panel-chat');
+    document.getElementById('chat-header').addEventListener('click', () => { chat.classList.toggle('chat-abierta'); chat.classList.toggle('chat-minimizada'); });
+    
+    const msgContainer = document.getElementById('chat-mensajes');
+    const inputChat = document.getElementById('chat-input');
+    const agregarMensaje = (txt, tipo) => {
+        const div = document.createElement('div');
+        div.className = tipo === 'user' ? 'msg-user' : 'msg-bot';
+        div.innerHTML = txt;
+        msgContainer.appendChild(div);
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    };
+    
+    const enviar = () => {
+        let txt = inputChat.value.trim();
+        if (!txt) return;
+        agregarMensaje(txt, 'user');
+        inputChat.value = '';
+        setTimeout(() => {
+            let res = "Consulta genérica.";
+            let nTxt = normalizarTexto(txt);
+            if (nTxt.includes('por vencer')) {
+                let l = marcadoresGuardados.filter(o => o.severidadGlobal === 'ALERTA_TEMPRANA').map(o => o.datos.ID);
+                res = l.length > 0 ? `🟡 <b>Por vencer:</b><br>${l.join(', ')}` : `✅ Ninguna por vencer.`;
+            } else {
+                let est = marcadoresGuardados.find(o => new RegExp(`\\b${normalizarTexto(o.datos.ID)}\\b`, 'i').test(nTxt));
+                if (est) res = `<b>📍 ${est.datos.ID}</b><br>🚧 <b>Obra:</b> ${formatearTextoPopup(est.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(est.evalDesvio)}`;
+                else res = "Identifica la estructura (Ej: 'PV19').";
+            }
+            agregarMensaje(res, 'bot');
+        }, 400); 
+    };
+
+    document.getElementById('btn-enviar-chat').addEventListener('click', enviar);
+    inputChat.addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
+}
