@@ -64,8 +64,8 @@ onAuthStateChanged(auth, (user) => {
 });
 
 let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
-window.dataSemaforoActual = [];
-let chartObra = null, chartDesvio = null; 
+window.dataObrasGlobal = [];
+window.dataDesviosGlobal = [];
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
@@ -81,7 +81,6 @@ function iniciarMotorDelMapa() {
         download: true, header: true,
         complete: function(results) {
             let tCriticos=0, tTramite=0, tAlerta=0, tLey=0, tCulminado=0;
-            let rObra=[], rDesvio=[];
             
             results.data.forEach(item => {
                 if (item.Latitud && item.Longitud && item.ID) {
@@ -96,15 +95,9 @@ function iniciarMotorDelMapa() {
                     if (sev === 'LEY31955') tLey++;
                     if (sev === 'CULMINADO') tCulminado++;
 
-                    [ { tipo: 'Obra', ev: evalObra, res: item.Aut_Obra_Resolucion }, { tipo: 'Desvío', ev: evalDesvio, res: item.Aut_Desvio_Resolucion } ].forEach(x => {
-                        if (['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE', 'ALERTA_TEMPRANA'].includes(x.ev.estadoRiesgo)) {
-                            window.dataSemaforoActual.push({ id: item.ID, tipo: x.tipo, resolucion: x.res, dias: x.ev.diasValor, estado: x.ev.estadoRiesgo, accion: x.ev.accion });
-                        }
-                        if (x.ev.esTramite && x.ev.diasValor !== null && x.ev.diasValor < 0) {
-                            if(x.tipo === 'Obra') rObra.push({id: item.ID, dias: Math.abs(x.ev.diasValor)});
-                            else rDesvio.push({id: item.ID, dias: Math.abs(x.ev.diasValor)});
-                        }
-                    });
+                    // Llenar listas separadas con TODOS los datos
+                    window.dataObrasGlobal.push({ id: item.ID, resolucion: item.Aut_Obra_Resolucion, dias: evalObra.diasValor, estado: evalObra.estadoRiesgo, orig: item.Aut_Obra_Dias_Restantes });
+                    window.dataDesviosGlobal.push({ id: item.ID, resolucion: item.Aut_Desvio_Resolucion, dias: evalDesvio.diasValor, estado: evalDesvio.estadoRiesgo, orig: item.Aut_Desvio_Dias_Restantes });
 
                     let lat = parseFloat(item.Latitud.toString().replace(/,/g, '.'));
                     let lon = parseFloat(item.Longitud.toString().replace(/,/g, '.'));
@@ -135,9 +128,8 @@ function iniciarMotorDelMapa() {
             document.getElementById('kpi-naranja').innerText = tLey;
             document.getElementById('kpi-verde').innerText = tCulminado;
 
-            renderizarTablaSemaforo(window.dataSemaforoActual);
-            rObra.sort((a, b) => b.dias - a.dias); rDesvio.sort((a, b) => b.dias - a.dias);
-            renderizarGraficos(rObra.slice(0, 10), rDesvio.slice(0, 10));
+            renderizarTablasCompletas(window.dataObrasGlobal, 'tabla-obras-global');
+            renderizarTablasCompletas(window.dataDesviosGlobal, 'tabla-desvios-global');
 
             document.querySelectorAll('.filtro-seccion .btn-pill').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -169,6 +161,7 @@ function evaluarRiesgo(dias, comentarios) {
     else if (aTemp && !esT) { estado = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } 
     else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } 
     else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; }
+    else if (isNaN(dNum) && !esC && !esT && !esE) { estado = 'INDEFINIDO'; accion = 'Regularizar'; }
     return { diasValor: isNaN(dNum) ? null : dNum, esTramite: esT, estadoRiesgo: estado, accion: accion };
 }
 
@@ -196,7 +189,7 @@ function aplicarEstiloMarcador(marker, estado) {
 }
 
 function determinarSeveridadVisual(o, d) {
-    const p = { 'CRITICO_SIN_ACCION': 5, 'CRITICO_EN_TRAMITE': 4, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 2, 'LEY31955': 1, 'VIGENTE': 0, 'CULMINADO': -1 };
+    const p = { 'CRITICO_SIN_ACCION': 5, 'CRITICO_EN_TRAMITE': 4, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 2, 'LEY31955': 1, 'VIGENTE': 0, 'INDEFINIDO': 0, 'CULMINADO': -1 };
     return p[o.estadoRiesgo] > p[d.estadoRiesgo] ? o.estadoRiesgo : d.estadoRiesgo;
 }
 
@@ -214,48 +207,49 @@ function aplicarFiltros() {
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
 }
 
-function renderizarTablaSemaforo(data) {
-    const tbody = document.getElementById('tabla-semaforo-riesgos');
+function renderizarTablasCompletas(data, tableId) {
+    const tbody = document.getElementById(tableId);
     if (!tbody) return;
-    const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3 };
+    
+    // Jerarquía visual: Criticos (1), Tramites (2), Alerta (3), Vigente (4), Ley (5), Culminado (6)
+    const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 4, 'VIGENTE': 5, 'INDEFINIDO': 6, 'LEY31955': 7, 'CULMINADO': 8 };
     data.sort((a, b) => jerarquia[a.estado] - jerarquia[b.estado] || a.dias - b.dias);
 
     tbody.innerHTML = '';
     data.forEach(fila => {
-        let claseColor = fila.estado === 'CRITICO_SIN_ACCION' ? 'bg-red-500 text-white' : fila.estado === 'CRITICO_EN_TRAMITE' ? 'bg-fuchsia-600 text-white' : 'bg-yellow-400 text-slate-800';
-        let textoDias = fila.dias < 0 ? `${fila.dias} días (Vencido)` : `${fila.dias} días (Alerta)`;
-        let bgFila = fila.tipo === 'Obra' ? 'bg-sky-50/50' : 'bg-fuchsia-50/40';
+        let etiquetaHTML = "";
+        let colorFila = "bg-white";
+
+        if (fila.estado === 'CRITICO_SIN_ACCION') {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-red-500 text-white">- ${Math.abs(fila.dias)}d (Vencido)</span>`;
+            colorFila = "bg-red-50/50";
+        } else if (fila.estado === 'CRITICO_EN_TRAMITE') {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`;
+            colorFila = "bg-fuchsia-50/40";
+        } else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span>`;
+        } else if (fila.estado === 'LEY31955') {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-orange-500 text-white">Ley 31955</span>`;
+        } else if (fila.estado === 'CULMINADO') {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-emerald-500 text-white">Culminada</span>`;
+        } else {
+            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
+        }
 
         tbody.innerHTML += `
-            <tr class="border-b border-white hover:bg-slate-100 transition-colors ${bgFila}">
+            <tr class="border-b border-slate-100 hover:bg-slate-100 transition-colors ${colorFila}">
                 <td class="p-2 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
-                <td class="p-2 text-slate-600 font-medium">${fila.tipo}</td>
                 <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
-                <td class="p-2 text-center flex flex-col items-center justify-center gap-1.5 border-l border-white/50">
-                    <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] whitespace-nowrap w-full ${claseColor}">${textoDias}</span>
-                    <span class="text-[0.6rem] font-bold text-slate-700 uppercase tracking-tight">${fila.accion}</span>
-                </td>
+                <td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>
             </tr>`;
     });
-}
-
-function renderizarGraficos(dataObra, dataDesvio) {
-    const ctxObra = document.getElementById('grafico-ranking-obra');
-    const ctxDesvio = document.getElementById('grafico-ranking-desvio');
-    if (chartObra) chartObra.destroy(); if (chartDesvio) chartDesvio.destroy();
-
-    const op = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 10} } } }, scales: { y: { beginAtZero: true, border: {display: false}, grid: { color: '#f1f5f9' }, ticks:{font:{size:9}} }, x: { grid: { display: false }, ticks:{font:{size:8, weight:'bold'}, maxRotation: 45, minRotation: 45} } } };
-    if (typeof Chart !== 'undefined') {
-        if(ctxObra) chartObra = new Chart(ctxObra, { type: 'bar', data: { labels: dataObra.map(d=>d.id), datasets: [{ label: 'OBRAS: Días Vencidos', data: dataObra.map(d=>d.dias), backgroundColor: '#38bdf8', borderRadius: 4 }] }, options: op });
-        if(ctxDesvio) chartDesvio = new Chart(ctxDesvio, { type: 'bar', data: { labels: dataDesvio.map(d=>d.id), datasets: [{ label: 'DESVÍOS: Días Vencidos', data: dataDesvio.map(d=>d.dias), backgroundColor: '#d946ef', borderRadius: 4 }] }, options: op });
-    }
 }
 
 function configurarBotonTXT() {
     document.getElementById('btn-reporte-txt').addEventListener('click', (e) => {
         let t = `📊 *REPORTE PERMISOS - L2/L4*\n📅 ${new Date().toLocaleString('es-PE')}\n\n`;
-        let ob = window.dataSemaforoActual.filter(d => d.tipo === 'Obra');
-        let de = window.dataSemaforoActual.filter(d => d.tipo === 'Desvío');
+        let ob = window.dataObrasGlobal.filter(d => ['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE'].includes(d.estado));
+        let de = window.dataDesviosGlobal.filter(d => ['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE'].includes(d.estado));
         t += `🚧 *OBRAS CRÍTICAS (${ob.length}):*\n`; ob.forEach(o => t += `- ${o.id}: Vencido ${Math.abs(o.dias)}d.\n`);
         t += `\n🚦 *DESVÍOS CRÍTICOS (${de.length}):*\n`; de.forEach(d => t += `- ${d.id}: Vencido ${Math.abs(d.dias)}d.\n`);
         navigator.clipboard.writeText(t).then(() => { let ori = e.target.innerHTML; e.target.innerHTML = "✅ Copiado"; setTimeout(() => e.target.innerHTML = ori, 2000); });
