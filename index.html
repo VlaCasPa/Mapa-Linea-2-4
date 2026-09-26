@@ -3,46 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Gerencial - Control de Permisos L2/L4</title>
-    
-    <!-- Librerías Externas -->
+    <title>Panel Operativo - Línea 2 y Ramal L4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <!-- Estilos Personalizados y Animaciones -->
     <style>
         body { background-color: #f1f5f9; }
-        
         #map { height: 100%; width: 100%; z-index: 1; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
         .mapa-google-gris { filter: grayscale(100%) brightness(1.15) contrast(0.85) opacity(0.85); z-index: 0 !important; }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         .brillo-preventivo { animation: pulso-amarillo 2s infinite; stroke: #f59e0b !important; }
         .brillo-tramite-vencido { animation: pulso-rojo 2s infinite; stroke: #dc2626 !important; }
-        @keyframes pulso-amarillo { 0% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); } 100% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); } }
-        @keyframes pulso-rojo { 0% { filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.8)); } 100% { filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.4)); } }
-
+        @keyframes pulso-amarillo { 0% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); } }
+        @keyframes pulso-rojo { 0% { filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.8)); } }
         .btn-pill { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 4px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .btn-pill:hover { background: #e2e8f0; }
         .btn-pill.active { background: #1e293b; color: white; border-color: #1e293b; }
-
         .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; z-index: 1001; }
         .popup-container { font-family: 'Segoe UI', sans-serif; padding: 12px; }
         .auth-box { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 8px; margin-bottom: 8px; border-radius: 4px; font-size: 0.85rem;}
-        
         .estado-critico-sin-accion { border-left-color: #dc2626; background-color: #fef2f2; }
         .estado-critico-en-tramite { border-left-color: #c026d3; background-color: #fdf4ff; }
         .estado-alerta { border-left-color: #f59e0b; background-color: #fffbeb; }
         .estado-tramite-plazo { border-left-color: #3b82f6; background-color: #eff6ff; }
         .estado-exonerado { border-left-color: #f97316; background-color: #fff7ed; }
         .estado-culminado { border-left-color: #10b981; background-color: #ecfdf5; }
-        
         #panel-chat { position: fixed; bottom: 20px; left: 20px; width: calc(100% - 40px); max-width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; transition: height 0.3s ease; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb;}
         .chat-minimizada { height: 42px; }
         .chat-abierta { height: 400px; }
@@ -53,101 +40,55 @@
         #chat-input-container { display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0; }
         #chat-input { flex-grow: 1; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; outline: none; font-size: 0.85rem; }
         #btn-enviar-chat { background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;}
-        
         .tabla-scroll { max-height: 45vh; overflow-y: auto; overflow-x: auto; }
-
-        /* Lienzo A4 Oculto para exportación PDF */
-        #plantilla-pdf-container { position: absolute; left: -9999px; top: 0; width: 800px; background: white; padding: 40px; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; color: #1e293b; z-index: -10; }
-        .pdf-header { border-bottom: 3px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px; }
-        .pdf-title { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
-        .pdf-subtitle { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; }
-        .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .pdf-kpi-box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; }
-        .pdf-bar-bg { width: 100%; background-color: #f1f5f9; border-radius: 999px; height: 12px; overflow: hidden; margin-top: 8px; }
-        .pdf-bar-fill { height: 100%; border-radius: 999px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
-        .pdf-table th { background-color: #f8fafc; padding: 8px; border-bottom: 2px solid #cbd5e1; text-align: left; font-weight: bold; }
-        .pdf-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-50 text-gray-800 font-sans antialiased relative lg:h-screen lg:flex lg:flex-col overflow-x-hidden">
 
-    <!-- 1. PANTALLA DE AUTENTICACIÓN -->
+    <!-- LOGIN -->
     <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-50">
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
             <p class="text-sm text-slate-500 mb-6">Administración Contractual L2/L4</p>
             <div class="space-y-4">
-                <input type="email" id="email-corp" placeholder="Correo Corporativo (@ccmetrolima.com)" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 shadow-md">Ingresar al Sistema</button>
-                <div class="relative flex items-center py-2">
-                    <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">Opciones Alternas</span>
-                    <div class="flex-grow border-t border-gray-300"></div>
-                </div>
-                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg flex justify-center items-center gap-2 transition duration-200">
-                    Ingreso Autorizado
-                </button>
+                <input type="email" id="email-corp" placeholder="Correo Corporativo" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm">
+                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm">
+                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">Ingresar al Sistema</button>
+                <div class="relative flex items-center py-2"><div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink-0 mx-4 text-gray-400 text-xs">Opciones Alternas</span><div class="flex-grow border-t border-gray-300"></div></div>
+                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg">Ingreso Autorizado</button>
             </div>
             <p id="mensaje-error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"></p>
         </div>
     </div>
 
-    <!-- 2. DASHBOARD GERENCIAL -->
+    <!-- APP OPERATIVA -->
     <div id="app-principal" style="display: none;" class="flex-col w-full max-w-[1920px] mx-auto p-2 md:p-4 h-full overflow-hidden">
         
-        <!-- HEADER COMPACTO CON KPIs Y BOTONES DUALES -->
-        <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 lg:gap-0 w-full">
-            
+        <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-3 lg:px-6 rounded-xl shadow-sm border border-gray-200 mb-4 shrink-0 gap-3 w-full">
             <div class="shrink-0 w-full lg:w-auto pr-24 lg:pr-0 order-1">
                 <h1 class="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-tight">Autorizaciones Municipales</h1>
                 <p class="text-[0.65rem] md:text-xs text-slate-500 font-semibold mt-0.5">Línea 2 y Ramal L4 - Consorcio Constructor</p>
             </div>
             
-            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar justify-between lg:justify-end gap-1.5 md:gap-4 items-center shrink-0 pb-1 lg:pb-0 mt-1 lg:mt-0 order-3 lg:order-2">
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0">
-                    <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">Sin Acción</span>
-                    <span id="kpi-rojo" class="text-xl md:text-2xl font-black text-red-600 leading-none">0</span>
-                </div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0">
-                    <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">En Trámite</span>
-                    <span id="kpi-morado" class="text-xl md:text-2xl font-black text-fuchsia-600 leading-none">0</span>
-                </div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0">
-                    <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">&lt; 4 Meses</span>
-                    <span id="kpi-amarillo" class="text-xl md:text-2xl font-black text-yellow-500 leading-none">0</span>
-                </div>
-                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0">
-                    <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">Ley 31955</span>
-                    <span id="kpi-naranja" class="text-xl md:text-2xl font-black text-orange-500 leading-none">0</span>
-                </div>
-                <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-200 shrink-0">
-                    <span class="text-[0.6rem] md:text-[0.65rem] font-bold text-slate-500 uppercase">Culminadas</span>
-                    <span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500 leading-none">0</span>
-                </div>
+            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar justify-between lg:justify-end gap-1.5 md:gap-4 items-center shrink-0 order-3 lg:order-2">
+                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Sin Acción</span><span id="kpi-rojo" class="text-xl md:text-2xl font-black text-red-600">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">En Trámite</span><span id="kpi-morado" class="text-xl md:text-2xl font-black text-fuchsia-600">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">&lt; 4 Meses</span><span id="kpi-amarillo" class="text-xl md:text-2xl font-black text-yellow-500">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Ley 31955</span><span id="kpi-naranja" class="text-xl md:text-2xl font-black text-orange-500">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Culminadas</span><span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500">0</span></div>
             </div>
 
-            <!-- Botones de Reporte Duales -->
-            <div class="absolute top-3 right-3 lg:static flex gap-1.5 md:gap-2 z-10 order-2 lg:order-3 lg:ml-4">
-                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 md:px-3 md:py-2 rounded-lg shadow-sm font-bold transition-colors text-[0.6rem] md:text-xs">
-                    📄 TXT
-                </button>
-                <button id="btn-reporte-pdf" class="bg-slate-800 hover:bg-slate-700 text-white px-2 py-1.5 md:px-3 md:py-2 rounded-lg shadow-sm font-bold transition-colors text-[0.6rem] md:text-xs flex items-center gap-1">
-                    📊 PDF A4
-                </button>
+            <!-- BOTONES NAVEGACIÓN -->
+            <div class="absolute top-3 right-3 lg:static flex gap-1.5 md:gap-2 z-10 order-2 lg:order-3">
+                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs">📄 Copiar TXT</button>
+                <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs flex items-center">📊 Tablero Analítico</a>
             </div>
         </header>
 
-        <!-- ÁREA DE TRABAJO (SPLIT VIEW) -->
         <div class="flex flex-col lg:flex-row gap-4 flex-grow min-h-0 overflow-y-auto lg:overflow-y-hidden pb-16 lg:pb-0 w-full">
-            
-            <!-- MITAD IZQUIERDA: MAPA Y FILTROS -->
             <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[65vh] lg:h-full shrink-0">
                 <details open class="group absolute top-2 left-2 md:top-3 md:left-3 z-[1000] bg-white/95 backdrop-blur-sm p-2 md:p-3 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm transition-all">
-                    <summary class="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider cursor-pointer list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">
-                        Aislamiento de Riesgo <span class="group-open:rotate-180 transition-transform ml-2">▼</span>
-                    </summary>
+                    <summary class="text-[0.65rem] font-bold text-slate-500 uppercase cursor-pointer list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">Aislamiento de Riesgo ▼</summary>
                     <div class="flex flex-wrap gap-1.5 mt-2 filtro-seccion">
                         <button class="btn-pill active" data-estado="Todos">Vista General</button>
                         <button class="btn-pill" data-estado="Criticos">🔴 Sin Acción</button>
@@ -160,7 +101,7 @@
                 <div id="map" class="flex-grow z-0 rounded-lg"></div>
             </div>
 
-            <!-- MITAD DERECHA: TABLA Y GRÁFICOS -->
+            <!-- PANEL DERECHO (SE MANTIENEN LAS TABLAS Y GRÁFICOS AQUÍ) -->
             <div class="w-full lg:w-1/3 flex flex-col gap-4 shrink-0 lg:shrink lg:h-full lg:min-h-0 pb-6 lg:pb-0">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink">
                     <div class="p-3 border-b border-gray-200 bg-slate-50 rounded-t-xl">
@@ -192,68 +133,22 @@
                 </div>
             </div>
         </div>
-        
-        <!-- 3. MÓDULO NLP Y FIRMA (Dentro de la bóveda para ocultarse en el login) -->
-        <div id="panel-chat" class="chat-minimizada">
-            <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold tracking-wide">🤖 Consultor IA BETA</span></div>
-            <div id="chat-mensajes"><div class="msg-bot">Hola. Consulta estados o vigencias (Ej: "¿Qué obras están por vencer?").</div></div>
-            <div id="chat-input-container">
-                <input type="text" id="chat-input" placeholder="Pregunta aquí...">
-                <button id="btn-enviar-chat">Enviar</button>
-            </div>
-        </div>
+    </div>
 
-        <div class="fixed bottom-2 right-3 md:bottom-3 md:right-4 z-[9999] opacity-60 hover:opacity-100 transition-opacity pointer-events-none md:pointer-events-auto">
-            <span class="text-[0.6rem] md:text-[0.65rem] text-slate-500 font-medium tracking-widest uppercase bg-white/70 px-2 py-1 rounded backdrop-blur-sm">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
-        </div>
-
-        <!-- LIENZO A4 OCULTO PARA EXPORTACIÓN PDF -->
-        <div id="plantilla-pdf-container">
-            <div class="pdf-header flex justify-between items-end">
-                <div>
-                    <div class="pdf-title">Reporte Ejecutivo Contractual</div>
-                    <div class="pdf-subtitle">Permisos Municipales - L2/L4</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm font-bold" id="pdf-fecha">--/--/----</div>
-                    <div class="text-xs text-gray-500" id="pdf-hora">--:--</div>
-                </div>
-            </div>
-
-            <div class="pdf-grid">
-                <div class="pdf-kpi-box border-l-4 border-l-red-600 bg-red-50">
-                    <div class="text-xs font-bold uppercase text-red-600">Riesgo Crítico (Sin Acción)</div>
-                    <div class="text-3xl font-black text-red-700" id="pdf-kpi-rojo">0</div>
-                    <div class="pdf-bar-bg"><div id="pdf-bar-rojo" class="pdf-bar-fill bg-red-500" style="width: 0%"></div></div>
-                    <div class="text-[10px] mt-1 text-slate-500 text-right font-bold" id="pdf-pct-rojo">0% del total</div>
-                </div>
-                <div class="pdf-kpi-box border-l-4 border-l-fuchsia-600 bg-fuchsia-50">
-                    <div class="text-xs font-bold uppercase text-fuchsia-600">Gestión Ante Entidad (En Trámite)</div>
-                    <div class="text-3xl font-black text-fuchsia-700" id="pdf-kpi-morado">0</div>
-                    <div class="pdf-bar-bg"><div id="pdf-bar-morado" class="pdf-bar-fill bg-fuchsia-500" style="width: 0%"></div></div>
-                    <div class="text-[10px] mt-1 text-slate-500 text-right font-bold" id="pdf-pct-morado">0% del total</div>
-                </div>
-            </div>
-
-            <h3 class="text-sm font-bold mt-6 mb-2 border-b border-gray-200 pb-1">Top 10 - Contingencias de Obras (Días de Atraso)</h3>
-            <table class="pdf-table" id="pdf-tabla-obra">
-                <thead><tr><th width="15%">Estructura</th><th width="30%">Resolución</th><th width="15%">Estado</th><th width="40%">Días Atraso (Entidad/Interno)</th></tr></thead>
-                <tbody></tbody>
-            </table>
-
-            <h3 class="text-sm font-bold mt-6 mb-2 border-b border-gray-200 pb-1">Top 10 - Contingencias de Desvíos (Días de Atraso)</h3>
-            <table class="pdf-table" id="pdf-tabla-desvio">
-                <thead><tr><th width="15%">Estructura</th><th width="30%">Resolución</th><th width="15%">Estado</th><th width="40%">Días Atraso (Entidad/Interno)</th></tr></thead>
-                <tbody></tbody>
-            </table>
-            
-            <div class="mt-8 pt-4 border-t border-gray-300 text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold">
-                Documento Generado por Sistema Automatizado - Diseñado por Vladimir Casas
-            </div>
+    <!-- MÓDULO NLP -->
+    <div id="panel-chat" class="chat-minimizada">
+        <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold">🤖 Consultor IA BETA</span></div>
+        <div id="chat-mensajes"><div class="msg-bot">Hola. Consulta estados o vigencias (Ej: "¿Qué obras están por vencer?").</div></div>
+        <div id="chat-input-container">
+            <input type="text" id="chat-input" placeholder="Pregunta aquí...">
+            <button id="btn-enviar-chat">Enviar</button>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <div class="fixed bottom-2 right-3 z-[9999] opacity-60 pointer-events-none">
+        <span class="text-[0.65rem] text-slate-500 font-medium uppercase bg-white/70 px-2 py-1 rounded">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
+    </div>
 
+    <script type="module" src="script.js"></script>
 </body>
 </html>
