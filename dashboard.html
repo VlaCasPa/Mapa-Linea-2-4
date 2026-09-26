@@ -3,126 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Gerencial - Permisos Línea 2</title>
-    <!-- Fuentes y Librerías CSS -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f4f7f9; color: #2c3e50; }
-        .top-navbar { background-color: #ffffff; padding: 15px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563EB; }
-        .top-navbar h1 { margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; }
-        .btn-volver { background-color: #f1f5f9; color: #334155; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; transition: all 0.2s; border: 1px solid #cbd5e1; }
-        .btn-volver:hover { background-color: #e2e8f0; color: #0f172a; }
-        .card-custom { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid #e2e8f0; height: 100%; display: flex; flex-direction: column; }
-        .card-title-custom { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
-        
-        .table-custom th { background-color: #f8fafc; font-size: 12px; color: #64748b; text-transform: uppercase; }
-        .table-custom td { font-size: 13px; vertical-align: middle; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
-        table.dataTable tbody tr.row-obra td { background-color: rgba(59, 130, 246, 0.04) !important; }
-        table.dataTable tbody tr.row-transito td { background-color: rgba(168, 85, 247, 0.05) !important; }
-        table.dataTable tbody tr:hover td { filter: brightness(0.96); }
-
-        .badge-riesgo { padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 11px; text-align: center; display: block; width: 100%; }
-        .bg-vencido { background-color: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-        .bg-critico { background-color: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
-        .bg-alerta { background-color: #fef9c3; color: #a16207; border: 1px solid #fde047; }
-        
-        #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; font-weight: 700; color: #2563EB; }
-        
-        /* Estilos para la leyenda de estructuras */
-        #leyenda-estructuras { font-size: 11px; color: #475569; margin-top: 15px; border-top: 1px dashed #cbd5e1; padding-top: 12px; line-height: 1.6; }
-        .tag-obra { color: #2563eb; font-weight: 700; }
-        .tag-transito { color: #9333ea; font-weight: 700; }
-    </style>
+    <title>Reporte Analítico - L2/L4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body>
+<body class="bg-slate-200 p-4 lg:p-8 text-slate-800 font-sans flex flex-col items-center">
 
-    <div id="loader">Autenticando credenciales y procesando matriz de riesgos...</div>
+    <div class="w-full max-w-4xl flex justify-between mb-4">
+        <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded-lg shadow-sm border border-slate-300">⬅ Volver al Mapa</a>
+        <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex gap-2">⬇️ Descargar PDF A4</button>
+    </div>
 
-    <div id="dashboard-content" style="display: none;">
-        <nav class="top-navbar">
-            <h1>Análisis Contractual de Permisos</h1>
-            <a href="index.html" class="btn-volver">🗺️ Volver al Mapa Interactivo</a>
-        </nav>
+    <!-- LIENZO A4 PARA EL PDF -->
+    <div id="lienzo-pdf" class="bg-white w-full max-w-4xl p-8 lg:p-12 shadow-2xl mx-auto box-border" style="min-height: 1122px;">
+        <div class="border-b-4 border-slate-800 pb-4 mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-none">Informe Estratégico</h1>
+                <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-1">Gestión Contractual L2/L4</p>
+            </div>
+            <div class="text-right">
+                <div class="text-lg font-bold text-slate-800" id="dash-fecha">--/--/----</div>
+                <div class="text-xs text-slate-500 font-semibold" id="dash-hora">--:--</div>
+            </div>
+        </div>
 
-        <div class="container-fluid py-4 px-4">
-            
-            <div class="row g-3 mb-4">
-                <div class="col-lg-4">
-                    <div class="card-custom">
-                        <div class="card-title-custom">Salud del Proyecto</div>
-                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
-                            <canvas id="chartEstadoGeneral"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="card-custom">
-                        <div class="card-title-custom">Gestión: Lima vs Callao</div>
-                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
-                            <canvas id="chartProvincias"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="card-custom">
-                        <div class="card-title-custom">Ranking: Días en Trámite</div>
-                        <div style="position: relative; flex-grow: 1; min-height: 250px;">
-                            <canvas id="chartRankingTramites"></canvas>
-                        </div>
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Gráfico Circular -->
+            <div class="border border-slate-200 rounded-lg p-6 bg-slate-50 flex flex-col items-center justify-center">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Distribución de Carga Administrativa</h3>
+                <div class="relative w-48 h-48"><canvas id="dash-chart-proporciones"></canvas></div>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-12">
-                    <div class="card-custom">
-                        <div class="card-title-custom">Cuellos de Botella Institucionales (Obra vs Tránsito)</div>
-                        <div style="position: relative; height: 300px; width: 100%;">
-                            <canvas id="chartMunicipalidades"></canvas>
-                        </div>
-                        <!-- NUEVO: Contenedor para mostrar los IDs debajo de la gráfica -->
-                        <div id="leyenda-estructuras"></div>
+            <!-- KPIs -->
+            <div class="flex flex-col justify-center gap-6">
+                <div class="border-l-4 border-red-600 bg-red-50 p-5 rounded-r-lg shadow-sm">
+                    <div class="text-xs font-bold uppercase text-red-700 tracking-wider">Riesgo Crítico (Sin Acción)</div>
+                    <div class="flex items-end justify-between mt-2">
+                        <span class="text-5xl font-black text-red-600 leading-none" id="dash-kpi-rojo">0</span>
+                        <span class="text-sm font-bold text-red-800 bg-red-200 px-2 py-1 rounded" id="dash-pct-rojo">0%</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="row">
-                <div class="col-12">
-                    <div class="card-custom">
-                        <div class="card-title-custom">Semáforo de Riesgos Cronológicos (Priorización Automática)</div>
-                        <div class="table-responsive">
-                            <table id="tablaRiesgos" class="table table-custom w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Estructura</th>
-                                        <th>Jurisdicción</th>
-                                        <th>Tipo de Trámite</th>
-                                        <th>Resolución Base</th>
-                                        <th>Días Restantes</th>
-                                        <th>Acción Recomendada</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Data inyectada vía JS -->
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="border-l-4 border-fuchsia-600 bg-fuchsia-50 p-5 rounded-r-lg shadow-sm">
+                    <div class="text-xs font-bold uppercase text-fuchsia-700 tracking-wider">Gestión Ante Entidad (Trámite)</div>
+                    <div class="flex items-end justify-between mt-2">
+                        <span class="text-5xl font-black text-fuchsia-600 leading-none" id="dash-kpi-morado">0</span>
+                        <span class="text-sm font-bold text-fuchsia-800 bg-fuchsia-200 px-2 py-1 rounded" id="dash-pct-morado">0%</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Tablas TOP 10 -->
+        <h3 class="text-sm font-bold mt-8 mb-2 border-b-2 border-slate-200 text-slate-800 pb-1">Top 10 - Contingencias de Obras Físicas (Días Vencidos)</h3>
+        <table class="w-full text-left border-collapse text-xs mb-8">
+            <thead class="bg-slate-100 text-slate-600">
+                <tr><th class="p-2 border-b-2 border-slate-300 w-20">ID</th><th class="p-2 border-b-2 border-slate-300">Resolución Base</th><th class="p-2 border-b-2 border-slate-300 w-32">Gestión Actual</th><th class="p-2 border-b-2 border-slate-300 text-center w-24">Días de Atraso</th></tr>
+            </thead>
+            <tbody id="dash-tabla-obra" class="divide-y divide-slate-100"></tbody>
+        </table>
+
+        <h3 class="text-sm font-bold mt-8 mb-2 border-b-2 border-slate-200 text-slate-800 pb-1">Top 10 - Contingencias de Desvíos de Tránsito (Días Vencidos)</h3>
+        <table class="w-full text-left border-collapse text-xs">
+            <thead class="bg-slate-100 text-slate-600">
+                <tr><th class="p-2 border-b-2 border-slate-300 w-20">ID</th><th class="p-2 border-b-2 border-slate-300">Resolución Base</th><th class="p-2 border-b-2 border-slate-300 w-32">Gestión Actual</th><th class="p-2 border-b-2 border-slate-300 text-center w-24">Días de Atraso</th></tr>
+            </thead>
+            <tbody id="dash-tabla-desvio" class="divide-y divide-slate-100"></tbody>
+        </table>
+        
+        <!-- Firma -->
+        <div class="mt-12 pt-4 border-t border-slate-300 text-center text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+            Documento Analítico Generado Automáticamente - Diseñado por Vladimir Casas
+        </div>
     </div>
 
-    <!-- Scripts de Librerías -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Plugin para Etiquetas de Porcentajes -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script type="module" src="dashboard.js"></script>
 </body>
 </html>
