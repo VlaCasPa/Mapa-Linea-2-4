@@ -17,7 +17,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let look = { d30: 0, d60: 0, d90: 0, d120: 0 };
             
             let tablaUrgente = [], tablaObraTramite = [], tablaDesvioTramite = [];
-            let criticosObras = [], criticosDesvios = [];
+            let consolidadoObras = [], consolidadoDesvios = [];
 
             results.data.forEach(item => {
                 if (!item.ID) return;
@@ -62,11 +62,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (evO.estado === 'TRAMITE' && evO.dNum !== null && evO.dNum < 0) tablaObraTramite.push({ id: item.ID, res: item.Aut_Obra_Resolucion, dias: evO.dNum });
                 if (evD.estado === 'TRAMITE' && evD.dNum !== null && evD.dNum < 0) tablaDesvioTramite.push({ id: item.ID, res: item.Aut_Desvio_Resolucion, dias: evD.dNum });
 
-                if (evO.estado === 'CRITICO' || evO.estado === 'TRAMITE') {
-                    if (evO.dNum !== null && evO.dNum < 0) criticosObras.push({ id: item.ID, dias: Math.abs(evO.dNum), tipo: 'Obra' }); 
+                // Almacenar todos los expedientes medibles para el Ranking (Vencidos y Por Vencer)
+                if (evO.dNum !== null && evO.estado !== 'CULMINADO' && evO.estado !== 'LEY31955') {
+                    consolidadoObras.push({ id: item.ID, dias: evO.dNum, tipo: 'Obra' }); 
                 }
-                if (evD.estado === 'CRITICO' || evD.estado === 'TRAMITE') {
-                    if (evD.dNum !== null && evD.dNum < 0) criticosDesvios.push({ id: item.ID, dias: Math.abs(evD.dNum), tipo: 'Desvío' }); 
+                if (evD.dNum !== null && evD.estado !== 'CULMINADO' && evD.estado !== 'LEY31955') {
+                    consolidadoDesvios.push({ id: item.ID, dias: evD.dNum, tipo: 'Desvío' }); 
                 }
             });
 
@@ -129,53 +130,57 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            let top10Obras = criticosObras.sort((a,b) => b.dias - a.dias).slice(0, 10);
-            let maxObras = top10Obras.length > 0 ? top10Obras[0].dias : 10;
+            // GRÁFICO DINÁMICO OBRAS (Rojo si <0, Amarillo si >=0)
+            let top10Obras = consolidadoObras.sort((a,b) => a.dias - b.dias).slice(0, 10);
+            let maxObras = top10Obras.length > 0 ? Math.max(...top10Obras.map(d => Math.abs(d.dias))) : 10;
             new Chart(document.getElementById('chart-obras-criticas'), {
                 type: 'bar',
                 data: {
                     labels: top10Obras.map(d => d.id),
-                    datasets: [{ data: top10Obras.map(d => d.dias), backgroundColor: '#dc2626', borderRadius: 3 }]
+                    datasets: [{ 
+                        data: top10Obras.map(d => Math.abs(d.dias)), 
+                        backgroundColor: top10Obras.map(d => d.dias < 0 ? '#dc2626' : '#eab308'), 
+                        borderRadius: 3 
+                    }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false }, 
-                        tooltip: { callbacks: { label: (ctx) => ` Obra: ${ctx.raw} días vencidos` } },
-                        datalabels: { anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, formatter: (v) => v+'d' } 
+                        tooltip: { callbacks: { label: (ctx) => { let realD = top10Obras[ctx.dataIndex].dias; return realD < 0 ? ` Vencido por ${Math.abs(realD)} días` : ` Quedan ${realD} días`; } } },
+                        datalabels: { anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, formatter: (v, ctx) => { let realD = top10Obras[ctx.dataIndex].dias; return realD < 0 ? `-${v}d` : `${v}d`; }, color: (ctx) => top10Obras[ctx.dataIndex].dias < 0 ? '#b91c1c' : '#ca8a04' } 
                     },
-                    scales: { 
-                        y: { display: false, suggestedMax: maxObras + 20 }, 
-                        x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } 
-                    }
+                    scales: { y: { display: false, suggestedMax: maxObras + 20 }, x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } }
                 }
             });
 
-            let top10Desvios = criticosDesvios.sort((a,b) => a.dias - b.dias).slice(0, 10);
-            let maxDesvios = top10Desvios.length > 0 ? top10Desvios[top10Desvios.length-1].dias : 10;
+            // GRÁFICO DINÁMICO DESVÍOS (Fucsia si <0, Amarillo si >=0)
+            let top10Desvios = consolidadoDesvios.sort((a,b) => a.dias - b.dias).slice(0, 10);
+            let maxDesvios = top10Desvios.length > 0 ? Math.max(...top10Desvios.map(d => Math.abs(d.dias))) : 10;
             new Chart(document.getElementById('chart-desvios-criticos'), {
                 type: 'bar',
                 data: {
                     labels: top10Desvios.map(d => d.id),
-                    datasets: [{ data: top10Desvios.map(d => d.dias), backgroundColor: '#c026d3', borderRadius: 3 }]
+                    datasets: [{ 
+                        data: top10Desvios.map(d => Math.abs(d.dias)), 
+                        backgroundColor: top10Desvios.map(d => d.dias < 0 ? '#c026d3' : '#eab308'), 
+                        borderRadius: 3 
+                    }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false }, 
-                        tooltip: { callbacks: { label: (ctx) => ` Desvío: ${ctx.raw} días vencidos` } },
-                        datalabels: { anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, formatter: (v) => v+'d' } 
+                        tooltip: { callbacks: { label: (ctx) => { let realD = top10Desvios[ctx.dataIndex].dias; return realD < 0 ? ` Vencido por ${Math.abs(realD)} días` : ` Quedan ${realD} días`; } } },
+                        datalabels: { anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, formatter: (v, ctx) => { let realD = top10Desvios[ctx.dataIndex].dias; return realD < 0 ? `-${v}d` : `${v}d`; }, color: (ctx) => top10Desvios[ctx.dataIndex].dias < 0 ? '#a21caf' : '#ca8a04' } 
                     },
-                    scales: { 
-                        y: { display: false, suggestedMax: maxDesvios + 20 }, 
-                        x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } 
-                    }
+                    scales: { y: { display: false, suggestedMax: maxDesvios + 20 }, x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } }
                 }
             });
 
             const poblarTabla = (idTbody, data, isUrgente) => {
                 const tb = document.querySelector(`#${idTbody} tbody`);
-                data.sort((a, b) => b.dias - a.dias).slice(0, 5).forEach(d => { 
+                data.sort((a, b) => a.dias - b.dias).slice(0, 5).forEach(d => { 
                     let colorDias = isUrgente ? 'text-red-700' : 'text-fuchsia-700';
                     let cont = isUrgente ? `<span class="bg-red-100 px-2 py-0.5 rounded text-red-700 font-bold text-[9px]">-Vencido ${Math.abs(d.dias)}d</span>` : `<span class="text-[10px] font-black ${colorDias}">- ${Math.abs(d.dias)} días</span>`;
                     
@@ -194,7 +199,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-exportar-pdf').addEventListener('click', (e) => {
         let btn = e.target; let ori = btn.innerHTML; btn.innerHTML = "⏳ Procesando PDF...";
-        
         window.scrollTo(0, 0);
         const el = document.getElementById('lienzo-pdf');
         el.classList.add('modo-impresion');
