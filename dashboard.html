@@ -7,24 +7,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Plugin para Etiquetas (DataLabels) en el gráfico Circular -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
         
-        body { background-color: #e2e8f0; display: flex; flex-direction: column; align-items: center; padding: 20px; font-family: 'Inter', sans-serif; }
+        body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         
-        /* Contenedor A4 Estricto. Esto garantiza que la foto PDF sea perfecta siempre */
+        /* Contenedor A4 Estricto y Bloqueado */
         .hoja-a4 { 
             background: white; 
             width: 794px; /* Ancho exacto A4 a 96dpi */
-            min-height: 1123px; /* Alto exacto A4 */
+            height: 1123px; /* Alto exacto A4 para evitar página 2 en blanco */
             padding: 35px 40px; 
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
             box-sizing: border-box;
             color: #1e293b;
+            margin: 0 auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Clase temporal que se aplica solo en el milisegundo de la exportación PDF */
+        .modo-impresion {
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
         }
 
         .tabla-lean { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;}
@@ -34,92 +43,86 @@
         .tabla-morada th { border-bottom-color: #f0abfc; background-color: #fdf4ff; color: #a21caf; }
     </style>
 </head>
-<body>
+<body class="text-slate-800 font-sans">
 
-    <div class="w-full max-w-[794px] flex justify-between mb-4">
-        <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-sm">⬅ Volver al Mapa Operativo</a>
-        <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-sm">⬇️ Exportar Informe PDF</button>
-    </div>
-
-    <!-- EL DOCUMENTO A4 -->
-    <div id="lienzo-pdf" class="hoja-a4">
+    <!-- CORRECCIÓN CELULAR: items-start permite el scroll hacia la derecha natural -->
+    <div class="w-full min-h-screen flex flex-col items-start lg:items-center p-4 lg:p-8 overflow-x-auto">
         
-        <!-- CABECERA GERENCIAL -->
-        <header class="flex justify-between items-end border-b-4 border-slate-900 pb-3 mb-6">
-            <div>
-                <h1 class="text-3xl font-black tracking-tight leading-none text-slate-900">INFORME DE PERMISOS DE OBRA</h1>
-                <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Línea 2 y Ramal L4 - Consorcio Constructor</p>
-            </div>
-            <div class="text-right">
-                <div class="text-sm font-bold text-slate-800" id="dash-fecha">--/--/----</div>
-                <div class="text-[10px] text-slate-500 font-bold uppercase" id="dash-hora">--:--</div>
-            </div>
-        </header>
-
-        <!-- SECCIÓN 1: PANORAMA GLOBAL (MACRO) -->
-        <div class="flex gap-6 mb-6 h-52">
-            <!-- Gráfico Doughnut Principal -->
-            <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col relative">
-                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Estado Global del Portafolio</h3>
-                <div class="flex-grow relative w-full h-full">
-                    <canvas id="chart-portafolio"></canvas>
-                </div>
-            </div>
-
-            <!-- Jurisdicción y Lookahead Apilados -->
-            <div class="w-1/2 flex flex-col gap-4">
-                <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Carga por Jurisdicción</h3>
-                    <div class="flex-grow relative w-full h-full"><canvas id="chart-jurisdiccion"></canvas></div>
-                </div>
-                <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Lookahead de Vencimientos (Próx. 120d)</h3>
-                    <div class="flex-grow relative w-full h-full"><canvas id="chart-lookahead"></canvas></div>
-                </div>
-            </div>
+        <div class="w-full max-w-[794px] flex justify-between mb-4 sticky left-4 shrink-0">
+            <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-sm transition-colors">⬅ Volver al Mapa</a>
+            <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-sm transition-colors">⬇️ Exportar Informe PDF</button>
         </div>
 
-        <!-- SECCIÓN 2: MATRIZ DE RIESGO ID (TOP CRÍTICO) -->
-        <div class="border border-slate-200 rounded-lg p-4 bg-white mb-6 h-48 flex flex-col">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-2">Estado Crítico de Estructuras (Obras y Desvíos)</h3>
-            <div class="flex-grow relative w-full h-full"><canvas id="chart-ids"></canvas></div>
-        </div>
-
-        <!-- SECCIÓN 3: PLAN DE ACCIÓN (TABLAS LEAN) -->
-        <div class="flex flex-col gap-4">
+        <div id="lienzo-pdf" class="hoja-a4 shrink-0">
             
-            <div>
-                <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest mb-1 border-b border-red-200 pb-1">🔴 ACCIÓN URGENTE (Críticos Sin Gestión)</h3>
-                <table class="tabla-lean tabla-roja" id="tb-urgente">
-                    <thead><tr><th width="12%">ID</th><th width="15%">Tipo</th><th width="43%">Resolución Base</th><th width="30%">Contingencia</th></tr></thead>
-                    <tbody></tbody>
-                </table>
+            <header class="flex justify-between items-end border-b-4 border-slate-900 pb-3 mb-6">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight leading-none text-slate-900">INFORME DE PERMISOS DE OBRA</h1>
+                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Línea 2 y Ramal L4 - Consorcio Constructor</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-slate-800" id="dash-fecha">--/--/----</div>
+                    <div class="text-[10px] text-slate-500 font-bold uppercase" id="dash-hora">--:--</div>
+                </div>
+            </header>
+
+            <div class="flex gap-6 mb-6 h-52">
+                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col relative">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Estado Global del Portafolio</h3>
+                    <div class="flex-grow relative w-full h-full">
+                        <canvas id="chart-portafolio"></canvas>
+                    </div>
+                </div>
+
+                <div class="w-1/2 flex flex-col gap-4">
+                    <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Carga por Jurisdicción</h3>
+                        <div class="flex-grow relative w-full h-full"><canvas id="chart-jurisdiccion"></canvas></div>
+                    </div>
+                    <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Lookahead de Vencimientos (Próx. 120d)</h3>
+                        <div class="flex-grow relative w-full h-full"><canvas id="chart-lookahead"></canvas></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex gap-4">
-                <div class="w-1/2">
-                    <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 OBRAS EN TRÁMITE</h3>
-                    <table class="tabla-lean tabla-morada" id="tb-obra-tramite">
-                        <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
+            <div class="border border-slate-200 rounded-lg p-4 bg-white mb-6 h-48 flex flex-col">
+                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-2">Estado Crítico de Estructuras (Obras y Desvíos)</h3>
+                <div class="flex-grow relative w-full h-full"><canvas id="chart-ids"></canvas></div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div>
+                    <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest mb-1 border-b border-red-200 pb-1">🔴 ACCIÓN URGENTE (Críticos Sin Gestión)</h3>
+                    <table class="tabla-lean tabla-roja" id="tb-urgente">
+                        <thead><tr><th width="12%">ID</th><th width="15%">Tipo</th><th width="43%">Resolución Base</th><th width="30%">Contingencia</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                <div class="w-1/2">
-                    <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 DESVÍOS EN TRÁMITE</h3>
-                    <table class="tabla-lean tabla-morada" id="tb-desvio-tramite">
-                        <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
+
+                <div class="flex gap-4">
+                    <div class="w-1/2">
+                        <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 OBRAS EN TRÁMITE</h3>
+                        <table class="tabla-lean tabla-morada" id="tb-obra-tramite">
+                            <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="w-1/2">
+                        <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 DESVÍOS EN TRÁMITE</h3>
+                        <table class="tabla-lean tabla-morada" id="tb-desvio-tramite">
+                            <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-        </div>
+            <div class="absolute bottom-6 left-0 w-full text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold px-10">
+                Metodología Lean Construction & PMBOK • Documento Generado Automáticamente • Diseñado por Vladimir Casas
+            </div>
 
-        <!-- PIE DE PÁGINA -->
-        <div class="mt-4 pt-3 border-t border-slate-300 text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold">
-            Metodología Lean Construction & PMBOK • Documento Generado Automáticamente • Diseñado por Vladimir Casas
         </div>
-
     </div>
 
     <script type="module" src="dashboard.js"></script>
