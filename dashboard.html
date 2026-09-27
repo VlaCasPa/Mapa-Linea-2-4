@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- IMPORTANTE: viewport escalable para permitir zoom out y zoom in natural en celular -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Informe de Permisos de Obra - L2/L4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -15,6 +16,7 @@
         
         body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         
+        /* Contenedor A4 Estricto */
         .hoja-a4 { 
             background: white; 
             width: 794px; 
@@ -26,10 +28,20 @@
             margin: 0 auto;
             overflow: hidden;
             position: relative;
+            transform-origin: top center;
+        }
+
+        /* En dispositivos móviles pequeños, aplicamos un zoom out inicial automático para ver todo el reporte, permitiendo hacer zoom in */
+        @media (max-width: 820px) {
+            .hoja-a4 {
+                transform: scale(0.52);
+                margin-bottom: -540px; /* Compensar el espacio libre del scale */
+            }
         }
 
         .modo-impresion {
             margin: 0 !important;
+            transform: none !important;
             box-shadow: none !important;
             border: none !important;
         }
@@ -43,11 +55,11 @@
 </head>
 <body class="text-slate-800 font-sans">
 
-    <div class="w-full min-h-screen flex flex-col items-start lg:items-center p-4 lg:p-8 overflow-x-auto">
+    <div class="w-full min-h-screen flex flex-col items-center p-2 lg:p-8 overflow-x-auto">
         
-        <div class="w-full max-w-[794px] flex justify-between mb-4 sticky left-4 shrink-0">
-            <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-sm transition-colors">⬅ Volver al Mapa Operativo</a>
-            <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-sm transition-colors">⬇️ Exportar Informe PDF</button>
+        <div class="w-full max-w-[794px] flex justify-between mb-4 sticky left-4 shrink-0 px-2 lg:px-0">
+            <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-xs lg:text-sm transition-colors">⬅ Volver al Mapa</a>
+            <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-xs lg:text-sm transition-colors">⬇️ Exportar PDF</button>
         </div>
 
         <div id="lienzo-pdf" class="hoja-a4 shrink-0">
@@ -83,14 +95,13 @@
                 </div>
             </div>
 
-            <!-- GRÁFICOS TOP 10 DINÁMICOS -->
             <div class="flex gap-4 mb-6 h-48">
                 <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2"><span class="text-red-600">Top 10 Obras</span> (Mayor Prioridad)</h3>
+                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2">Top 10 - Obras (Mayor Prioridad)</h3>
                     <div class="flex-grow relative w-full h-full"><canvas id="chart-obras-criticas"></canvas></div>
                 </div>
                 <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2"><span class="text-fuchsia-600">Top 10 Desvíos</span> (Mayor Prioridad)</h3>
+                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2">Top 10 - Desvíos (Mayor Prioridad)</h3>
                     <div class="flex-grow relative w-full h-full"><canvas id="chart-desvios-criticos"></canvas></div>
                 </div>
             </div>
