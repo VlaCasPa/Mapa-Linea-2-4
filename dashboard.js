@@ -3,6 +3,14 @@ Chart.register(window.ChartDataLabels);
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
+// Extractor robusto de días para evitar vacíos por formato de texto
+const extraerNumeroDias = (val) => {
+    if (val === null || val === undefined) return null;
+    let str = String(val).trim();
+    let match = str.match(/-?\d+/);
+    return match ? parseInt(match[0]) : null;
+};
+
 window.addEventListener('DOMContentLoaded', () => {
     let fecha = new Date();
     document.getElementById('dash-fecha').innerText = fecha.toLocaleDateString('es-PE');
@@ -17,7 +25,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let look = { d30: 0, d60: 0, d90: 0, d120: 0 };
             
             let tablaUrgente = [], tablaObraTramite = [], tablaDesvioTramite = [];
-            let criticosObras = [], proximosDesvios = [];
+            let criticosObras = [], criticosDesvios = [];
 
             results.data.forEach(item => {
                 if (!item.ID) return;
@@ -26,12 +34,23 @@ window.addEventListener('DOMContentLoaded', () => {
                 let esCallao = loc.includes('callao') || loc.includes('carmen de la legua') || loc.includes('bellavista') || loc.includes('la perla');
 
                 const evaluar = (dias, comentarios) => {
-                    let dNum = parseInt(dias); let dStr = normalizarTexto(dias); let tc = normalizarTexto(comentarios);
+                    let dNum = extraerNumeroDias(dias); 
+                    let dStr = normalizarTexto(dias); 
+                    let tc = normalizarTexto(comentarios);
+                    
                     let esC = dStr === "culminado" || tc.includes("culminado");
                     let esT = dStr === "en tramite" || tc.includes("tramite");
                     let esE = dStr === "exonerado" || tc.includes("exonerado");
+                    
                     let estado = 'VIGENTE';
-                    if (esC) estado = 'CULMINADO'; else if (esE) estado = 'LEY31955'; else if (dNum < 0 && !esT) estado = 'CRITICO'; else if (dNum < 0 && esT) estado = 'TRAMITE'; else if (dNum >= 0 && dNum <= 120 && !esT) estado = 'ALERTA'; else if (esT) estado = 'TRAMITE'; else if (dNum === 0) estado = 'CRITICO';
+                    if (esC) estado = 'CULMINADO'; 
+                    else if (esE) estado = 'LEY31955'; 
+                    else if (dNum !== null && dNum < 0 && !esT) estado = 'CRITICO'; 
+                    else if (dNum !== null && dNum < 0 && esT) estado = 'TRAMITE'; 
+                    else if (dNum !== null && dNum >= 0 && dNum <= 120 && !esT) estado = 'ALERTA'; 
+                    else if (esT) estado = 'TRAMITE'; 
+                    else if (dNum === 0) estado = 'CRITICO';
+                    
                     return { estado, dNum };
                 };
 
@@ -46,10 +65,10 @@ window.addEventListener('DOMContentLoaded', () => {
                     if (ev.estado === 'CULMINADO') st.culminado++;
 
                     if (ev.estado === 'ALERTA' || ev.estado === 'VIGENTE') {
-                        if (ev.dNum >= 0 && ev.dNum <= 30) look.d30++;
-                        else if (ev.dNum > 30 && ev.dNum <= 60) look.d60++;
-                        else if (ev.dNum > 60 && ev.dNum <= 90) look.d90++;
-                        else if (ev.dNum > 90 && ev.dNum <= 120) look.d120++;
+                        if (ev.dNum !== null && ev.dNum >= 0 && ev.dNum <= 30) look.d30++;
+                        else if (ev.dNum !== null && ev.dNum > 30 && ev.dNum <= 60) look.d60++;
+                        else if (ev.dNum !== null && ev.dNum > 60 && ev.dNum <= 90) look.d90++;
+                        else if (ev.dNum !== null && ev.dNum > 90 && ev.dNum <= 120) look.d120++;
                     }
                 });
 
@@ -62,14 +81,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (evO.estado === 'TRAMITE' && evO.dNum !== null && evO.dNum < 0) tablaObraTramite.push({ id: item.ID, res: item.Aut_Obra_Resolucion, dias: evO.dNum });
                 if (evD.estado === 'TRAMITE' && evD.dNum !== null && evD.dNum < 0) tablaDesvioTramite.push({ id: item.ID, res: item.Aut_Desvio_Resolucion, dias: evD.dNum });
 
-                // 1. Obras con mayor atraso (Críticas / Negativas)
+                // Acumular Obras Críticas
                 if (evO.dNum !== null && evO.dNum < 0) {
                     criticosObras.push({ id: item.ID, dias: Math.abs(evO.dNum), tipo: 'Obra' }); 
                 }
 
-                // 2. Desvíos próximos a vencer (Vigentes o Alerta con días positivos)
-                if (evD.dNum !== null && evD.dNum >= 0 && evD.estado !== 'CULMINADO') {
-                    proximosDesvios.push({ id: item.ID, dias: evD.dNum, tipo: 'Desvío' });
+                // Acumular Desvíos Críticos (Si no hay negativos suficientes, toma los menores días restantes)
+                if (evD.dNum !== null && evD.estado !== 'CULMINADO') {
+                    criticosDesvios.push({ id: item.ID, dias: evD.dNum, tipo: 'Desvío' });
                 }
             });
 
@@ -135,7 +154,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // GRÁFICO IZQUIERDA: TOP 10 OBRAS (Mayor atraso / Críticas)
+            // GRÁFICO IZQUIERDA: TOP 10 OBRAS CRÍTICAS (Colores Pasteles Sobrios / Coral Ejecutivo)
             let top10Obras = criticosObras.sort((a,b) => b.dias - a.dias).slice(0, 10);
             let maxObras = top10Obras.length > 0 ? Math.max(...top10Obras.map(d => Math.abs(d.dias || 0))) : 10;
             new Chart(document.getElementById('chart-obras-criticas'), {
@@ -144,7 +163,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     labels: top10Obras.map(d => d.id),
                     datasets: [{ 
                         data: top10Obras.map(d => Math.abs(d.dias || 0)), 
-                        backgroundColor: '#dc2626', 
+                        backgroundColor: '#f87171', // Rojo pastel ejecutivo
                         borderRadius: 3 
                     }]
                 },
@@ -156,23 +175,23 @@ window.addEventListener('DOMContentLoaded', () => {
                         datalabels: { 
                             anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, 
                             formatter: (v) => { let num = parseInt(v) || 0; return num + 'd'; }, 
-                            color: '#b91c1c' 
+                            color: '#991b1b' 
                         } 
                     },
                     scales: { y: { display: false, suggestedMax: maxObras + 20 }, x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } }
                 }
             });
 
-            // GRÁFICO DERECHA: TOP 10 DESVÍOS (Próximos a vencer / Preventivos)
-            let top10Desvios = proximosDesvios.sort((a,b) => a.dias - b.dias).slice(0, 10); // Del que vence más pronto al más lejano
-            let maxDesvios = top10Desvios.length > 0 ? Math.max(...top10Desvios.map(d => (d.dias || 0))) : 10;
+            // GRÁFICO DERECHA: TOP 10 DESVÍOS CRÍTICOS (Colores Pasteles Sobrios / Morado Orquídea Ejecutivo)
+            let top10Desvios = criticosDesvios.sort((a,b) => a.dias - b.dias).slice(0, 10);
+            let maxDesvios = top10Desvios.length > 0 ? Math.max(...top10Desvios.map(d => Math.abs(d.dias || 0))) : 10;
             new Chart(document.getElementById('chart-desvios-criticos'), {
                 type: 'bar',
                 data: {
                     labels: top10Desvios.map(d => d.id),
                     datasets: [{ 
-                        data: top10Desvios.map(d => (d.dias || 0)), 
-                        backgroundColor: '#eab308', // Amarillo preventivo
+                        data: top10Desvios.map(d => Math.abs(d.dias || 0)), 
+                        backgroundColor: '#e879f9', // Morado/Fucsia pastel ejecutivo
                         borderRadius: 3 
                     }]
                 },
@@ -180,11 +199,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false }, 
-                        tooltip: { callbacks: { label: (ctx) => ` Quedan ${top10Desvios[ctx.dataIndex].dias || 0} días` } },
+                        tooltip: { callbacks: { label: (ctx) => { let d = top10Desvios[ctx.dataIndex].dias; return d < 0 ? ` Vencido por ${Math.abs(d)} días` : ` Quedan ${d} días`; } } },
                         datalabels: { 
                             anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, 
                             formatter: (v) => { let num = parseInt(v) || 0; return num + 'd'; }, 
-                            color: '#ca8a04' 
+                            color: '#86198f' 
                         } 
                     },
                     scales: { y: { display: false, suggestedMax: maxDesvios + 20 }, x: { grid: { display: false }, ticks: { font: { size: 7, weight: 'bold' }, maxRotation: 45, minRotation: 45 } } }
