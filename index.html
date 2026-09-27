@@ -11,7 +11,7 @@
     <style>
         body { background-color: #f1f5f9; }
         #map { height: 100%; width: 100%; z-index: 1; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
-        .mapa-google-gris { filter: grayscale(100%) brightness(1.00) contrast(1.00) opacity(0.75); z-index: 0 !important; }
+        .mapa-google-gris { filter: grayscale(100%) brightness(1.15) contrast(0.85) opacity(0.85); z-index: 0 !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .brillo-preventivo { animation: pulso-amarillo 2s infinite; stroke: #f59e0b !important; }
@@ -77,8 +77,12 @@
                 <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-200 shrink-0"><span class="text-[0.6rem] font-bold text-slate-500 uppercase">Culminadas</span><span id="kpi-verde" class="text-xl md:text-2xl font-black text-emerald-500">0</span></div>
             </div>
 
-            <div class="absolute top-3 right-3 lg:static flex gap-1.5 md:gap-2 z-10 order-2 lg:order-3">
-                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs transition-colors">📄 Copiar TXT</button>
+            <!-- BOTONES NAVEGACIÓN (TXT adaptable a TXT corto en celular) -->
+            <div class="absolute top-3 right-3 lg:static flex flex-col lg:flex-row gap-1.5 md:gap-2 z-10 order-2 lg:order-3 items-end lg:items-center">
+                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs transition-colors">
+                    <span class="inline lg:hidden">📄 TXT</span>
+                    <span class="hidden lg:inline">📄 Copiar TXT</span>
+                </button>
                 <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm font-bold text-[0.65rem] md:text-xs flex items-center transition-colors">📊 Dashboard PDF</a>
             </div>
         </header>
@@ -99,10 +103,7 @@
                 <div id="map" class="flex-grow z-0 rounded-lg"></div>
             </div>
 
-            <!-- PANEL DERECHO (SEPARACIÓN OBRAS Y DESVÍOS) -->
             <div class="w-full lg:w-1/3 flex flex-col gap-4 shrink-0 lg:shrink lg:h-full lg:min-h-0 pb-6 lg:pb-0">
-                
-                <!-- Tabla Obras Completas -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink">
                     <div class="p-3 border-b border-gray-200 bg-slate-50 rounded-t-xl">
                         <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Semáforo Global - Obras</h3>
@@ -121,7 +122,6 @@
                     </div>
                 </div>
 
-                <!-- Tabla Desvíos Completos -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink">
                     <div class="p-3 border-b border-gray-200 bg-slate-50 rounded-t-xl">
                         <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Semáforo Global - Desvíos</h3>
@@ -139,7 +139,6 @@
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
 
