@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- IMPORTANTE: viewport escalable para permitir zoom out y zoom in natural en celular -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Informe de Permisos de Obra - L2/L4</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +15,7 @@
         
         body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         
-        /* Contenedor A4 Estricto */
+        /* Contenedor A4 Estricto y Centrado Absoluto en Web y Celular */
         .hoja-a4 { 
             background: white; 
             width: 794px; 
@@ -28,20 +27,10 @@
             margin: 0 auto;
             overflow: hidden;
             position: relative;
-            transform-origin: top center;
-        }
-
-        /* En dispositivos móviles pequeños, aplicamos un zoom out inicial automático para ver todo el reporte, permitiendo hacer zoom in */
-        @media (max-width: 820px) {
-            .hoja-a4 {
-                transform: scale(0.52);
-                margin-bottom: -540px; /* Compensar el espacio libre del scale */
-            }
         }
 
         .modo-impresion {
             margin: 0 !important;
-            transform: none !important;
             box-shadow: none !important;
             border: none !important;
         }
@@ -58,7 +47,7 @@
     <div class="w-full min-h-screen flex flex-col items-center p-2 lg:p-8 overflow-x-auto">
         
         <div class="w-full max-w-[794px] flex justify-between mb-4 sticky left-4 shrink-0 px-2 lg:px-0">
-            <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-xs lg:text-sm transition-colors">⬅ Volver al Mapa</a>
+            <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-xs lg:text-sm transition-colors">⬅ Volver al Mapa Operativo</a>
             <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-xs lg:text-sm transition-colors">⬇️ Exportar PDF</button>
         </div>
 
