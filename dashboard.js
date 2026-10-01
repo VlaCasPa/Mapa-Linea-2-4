@@ -3,7 +3,6 @@ Chart.register(window.ChartDataLabels);
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
-// Extractor robusto de días para evitar vacíos por formato de texto
 const extraerNumeroDias = (val) => {
     if (val === null || val === undefined) return null;
     let str = String(val).trim();
@@ -81,18 +80,15 @@ window.addEventListener('DOMContentLoaded', () => {
                 if (evO.estado === 'TRAMITE' && evO.dNum !== null && evO.dNum < 0) tablaObraTramite.push({ id: item.ID, res: item.Aut_Obra_Resolucion, dias: evO.dNum });
                 if (evD.estado === 'TRAMITE' && evD.dNum !== null && evD.dNum < 0) tablaDesvioTramite.push({ id: item.ID, res: item.Aut_Desvio_Resolucion, dias: evD.dNum });
 
-                // Acumular Obras Críticas
                 if (evO.dNum !== null && evO.dNum < 0) {
                     criticosObras.push({ id: item.ID, dias: Math.abs(evO.dNum), tipo: 'Obra' }); 
                 }
 
-                // Acumular Desvíos Críticos (Si no hay negativos suficientes, toma los menores días restantes)
-                if (evD.dNum !== null && evD.estado !== 'CULMINADO') {
-                    criticosDesvios.push({ id: item.ID, dias: evD.dNum, tipo: 'Desvío' });
+                if (evD.dNum !== null && evD.dNum < 0) {
+                    criticosDesvios.push({ id: item.ID, dias: Math.abs(evD.dNum), tipo: 'Desvío' }); 
                 }
             });
 
-            // PORTAFOLIO GLOBAL
             let totalGeneral = st.critico + st.tramite + st.alerta + st.ley + st.culminado;
             new Chart(document.getElementById('chart-portafolio'), {
                 type: 'doughnut',
@@ -114,7 +110,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // JURISDICCIÓN
             new Chart(document.getElementById('chart-jurisdiccion'), {
                 type: 'bar',
                 data: {
@@ -140,7 +135,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // LOOKAHEAD
             new Chart(document.getElementById('chart-lookahead'), {
                 type: 'bar',
                 data: {
@@ -154,7 +148,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // GRÁFICO IZQUIERDA: TOP 10 OBRAS CRÍTICAS (Colores Pasteles Sobrios / Coral Ejecutivo)
             let top10Obras = criticosObras.sort((a,b) => b.dias - a.dias).slice(0, 10);
             let maxObras = top10Obras.length > 0 ? Math.max(...top10Obras.map(d => Math.abs(d.dias || 0))) : 10;
             new Chart(document.getElementById('chart-obras-criticas'), {
@@ -163,7 +156,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     labels: top10Obras.map(d => d.id),
                     datasets: [{ 
                         data: top10Obras.map(d => Math.abs(d.dias || 0)), 
-                        backgroundColor: '#f87171', // Rojo pastel ejecutivo
+                        backgroundColor: '#f87171', 
                         borderRadius: 3 
                     }]
                 },
@@ -182,8 +175,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // GRÁFICO DERECHA: TOP 10 DESVÍOS CRÍTICOS (Colores Pasteles Sobrios / Morado Orquídea Ejecutivo)
-            let top10Desvios = criticosDesvios.sort((a,b) => a.dias - b.dias).slice(0, 10);
+            let top10Desvios = criticosDesvios.sort((a,b) => b.dias - a.dias).slice(0, 10);
             let maxDesvios = top10Desvios.length > 0 ? Math.max(...top10Desvios.map(d => Math.abs(d.dias || 0))) : 10;
             new Chart(document.getElementById('chart-desvios-criticos'), {
                 type: 'bar',
@@ -191,7 +183,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     labels: top10Desvios.map(d => d.id),
                     datasets: [{ 
                         data: top10Desvios.map(d => Math.abs(d.dias || 0)), 
-                        backgroundColor: '#e879f9', // Morado/Fucsia pastel ejecutivo
+                        backgroundColor: '#e879f9', 
                         borderRadius: 3 
                     }]
                 },
@@ -199,7 +191,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     responsive: true, maintainAspectRatio: false,
                     plugins: { 
                         legend: { display: false }, 
-                        tooltip: { callbacks: { label: (ctx) => { let d = top10Desvios[ctx.dataIndex].dias; return d < 0 ? ` Vencido por ${Math.abs(d)} días` : ` Quedan ${d} días`; } } },
+                        tooltip: { callbacks: { label: (ctx) => ` Vencido por ${top10Desvios[ctx.dataIndex].dias || 0} días` } },
                         datalabels: { 
                             anchor: 'end', align: 'top', font: { size: 7, weight: 'bold' }, 
                             formatter: (v) => { let num = parseInt(v) || 0; return num + 'd'; }, 
@@ -210,7 +202,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // TABLAS TÁCTICAS
             const poblarTabla = (idTbody, data, isUrgente) => {
                 const tb = document.querySelector(`#${idTbody} tbody`);
                 data.sort((a, b) => a.dias - b.dias).slice(0, 5).forEach(d => { 
