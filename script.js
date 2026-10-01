@@ -117,7 +117,7 @@ function iniciarMotorDelMapa() {
                             </div>
                         `);
                         marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/90 px-1 rounded shadow-sm text-[0.65rem]' });
-                        marcadoresGuardados.push({ marcador: marker, datos: item, evalObra: evalObra, evalDesvio: evalDesvio, severidadGlobal: sev });
+                        marcadoresGuardados.push({ id: item.ID, marcador: marker, datos: item, evalObra: evalObra, evalDesvio: evalDesvio, severidadGlobal: sev, lat: lat, lon: lon });
                     }
                 }
             });
@@ -218,14 +218,14 @@ function renderizarTablasCompletas(data, tableId) {
     tbody.innerHTML = '';
     data.forEach(fila => {
         let etiquetaHTML = "";
-        let colorFila = "bg-white";
+        let colorFila = "bg-white/60";
 
         if (fila.estado === 'CRITICO_SIN_ACCION') {
             etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-red-500 text-white">- ${Math.abs(fila.dias)}d (Vencido)</span>`;
-            colorFila = "bg-red-50/50";
+            colorFila = "bg-red-100/70";
         } else if (fila.estado === 'CRITICO_EN_TRAMITE') {
             etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`;
-            colorFila = "bg-fuchsia-50/40";
+            colorFila = "bg-fuchsia-100/70";
         } else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
             let fechaVence = new Date();
             fechaVence.setDate(fechaVence.getDate() + (fila.dias || 0));
@@ -243,12 +243,29 @@ function renderizarTablasCompletas(data, tableId) {
             etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
         }
 
-        tbody.innerHTML += `
-            <tr class="border-b border-slate-100 hover:bg-slate-100 transition-colors ${colorFila}">
-                <td class="p-2 font-bold text-slate-700 whitespace-nowrap">${fila.id}</td>
-                <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
-                <td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>
-            </tr>`;
+        let tr = document.createElement('tr');
+        tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
+        tr.innerHTML = `
+            <td class="p-2 font-bold text-slate-800 whitespace-nowrap">${fila.id}</td>
+            <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
+            <td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>
+        `;
+
+        // Interacción al posicionar el mouse (Hover): Centrar ID en mapa y resaltar fila
+        tr.addEventListener('mouseenter', () => {
+            tr.classList.add('fila-resaltada');
+            let encontrado = marcadoresGuardados.find(m => m.id === fila.id);
+            if (encontrado) {
+                map.setView([encontrado.lat, encontrado.lon], 15, { animate: true });
+                encontrado.marcador.openPopup();
+            }
+        });
+
+        tr.addEventListener('mouseleave', () => {
+            tr.classList.remove('fila-resaltada');
+        });
+
+        tbody.appendChild(tr);
     });
 }
 
