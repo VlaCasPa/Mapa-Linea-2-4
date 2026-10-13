@@ -8,49 +8,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <style>
-        body { background-color: #f1f5f9; }
-        #map { height: 100%; width: 100%; z-index: 1; border-radius: 0.5rem; border: 1px solid #e2e8f0; }
-        .mapa-google-gris { filter: grayscale(100%) brightness(1.00) contrast(1.00) opacity(0.75); z-index: 0 !important; }
-        
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .brillo-preventivo { animation: pulso-amarillo 2s infinite; stroke: #f59e0b !important; }
-        .brillo-tramite-vencido { animation: pulso-rojo 2s infinite; stroke: #dc2626 !important; }
-        @keyframes pulso-amarillo { 0% { filter: drop-shadow(0 0 2px rgba(245, 158, 11, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8)); } }
-        @keyframes pulso-rojo { 0% { filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.4)); } 50% { filter: drop-shadow(0 0 6px rgba(220, 38, 38, 0.8)); } }
-        
-        .btn-pill { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 9999px; font-size: 0.65rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-        .btn-pill.active { background: #1e293b; color: white; border-color: #1e293b; }
-        
-        .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; z-index: 1001; }
-        .popup-container { font-family: 'Segoe UI', sans-serif; padding: 12px; }
-        .auth-box { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 8px; margin-bottom: 8px; border-radius: 4px; font-size: 0.85rem;}
-        .estado-critico-sin-accion { border-left-color: #dc2626; background-color: #fef2f2; }
-        .estado-critico-en-tramite { border-left-color: #c026d3; background-color: #fdf4ff; }
-        .estado-alerta { border-left-color: #f59e0b; background-color: #fffbeb; }
-        .estado-tramite-plazo { border-left-color: #3b82f6; background-color: #eff6ff; }
-        .estado-exonerado { border-left-color: #f97316; background-color: #fff7ed; }
-        .estado-culminado { border-left-color: #10b981; background-color: #ecfdf5; }
-        
-        .fila-resaltada { background-color: rgba(59, 130, 246, 0.25) !important; transition: background-color 0.2s ease; }
-
-        #panel-chat { position: fixed; bottom: 35px; left: 20px; width: calc(100% - 40px); max-width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; transition: height 0.3s ease; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb;}
-        .chat-minimizada { height: 42px; }
-        .chat-abierta { height: 400px; }
-        #chat-header { background: #1e293b; color: white; padding: 10px 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;}
-        #chat-mensajes { flex-grow: 1; overflow-y: auto; padding: 14px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;}
-        .msg-user { align-self: flex-end; background: #2563eb; color: white; padding: 8px 12px; border-radius: 12px 12px 0 12px; font-size: 0.85rem; max-width: 85%; }
-        .msg-bot { align-self: flex-start; background: white; color: #1e293b; padding: 8px 12px; border-radius: 12px 12px 12px 0; font-size: 0.85rem; border: 1px solid #e2e8f0; max-width: 85%; }
-        #chat-input-container { display: flex; padding: 10px; background: white; border-top: 1px solid #e2e8f0; }
-        #chat-input { flex-grow: 1; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; outline: none; font-size: 0.85rem; }
-        #btn-enviar-chat { background: #2563eb; color: white; border: none; padding: 6px 12px; margin-left: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;}
-        .tabla-scroll { max-height: 45vh; overflow-y: auto; overflow-x: auto; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
 
-    <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-[9999]">
+    <!-- PANTALLA DE BLOQUEO / INICIO DE SESIÓN IAM -->
+    <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-[9999]" style="display: none;">
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
             <p class="text-sm text-slate-500 mb-6">Administración Contractual L2/L4</p>
@@ -65,6 +28,22 @@
                 </button>
             </div>
             <p id="mensaje-error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"></p>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL DE ADVERTENCIA Y CONFIDENCIALIDAD (DISCLAIMER) -->
+    <div id="disclaimer-modal" class="modal-overlay-disclaimer" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header-disc">
+                <h3>Aviso de Confidencialidad y Uso Restringido</h3>
+            </div>
+            <div class="modal-body-disc">
+                <p>El presente aplicativo y repositorio constituyen una herramienta de gestión operativa de uso exclusivo para el personal autorizado del <strong>Consorcio Constructor Metro 2 de Lima (CCM2L)</strong>. Queda terminantemente prohibida la reproducción, distribución, comercialización o uso de la presente información para fines ajenos a los contractuales y de supervisión de obra.</p>
+                <p>El acceso no autorizado, la extracción, el uso indebido o la divulgación de los datos contenidos contravienen las normas internas de seguridad de la información, el deber de confidencialidad y la <strong>Ley N° 30096 (Ley de Delitos Informáticos)</strong> y la <strong>Ley N° 29733 (Ley de Protección de Datos Personales)</strong>, quedando el infractor sujeto a las sanciones laborales correspondientes y a las responsabilidades civiles y penales previstas en la legislación de la República del Perú.</p>
+            </div>
+            <div class="modal-footer-disc">
+                <button id="btn-aceptar-disclaimer" type="button" onclick="aceptarDisclaimer()">HE LEÍDO Y ACEPTO LOS TÉRMINOS DE CONFIDENCIALIDAD</button>
+            </div>
         </div>
     </div>
 
@@ -108,7 +87,6 @@
                 
                 <div id="map" class="flex-grow z-0 rounded-lg"></div>
 
-                <!-- FIRMA DE AUTORÍA EN LA ESQUINA INFERIOR DERECHA DEL MAPA -->
                 <div class="absolute bottom-2 right-32 z-[400] pointer-events-none bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded shadow-xs">
                     <span class="text-[0.6rem] text-slate-600 font-medium uppercase tracking-tight">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
                 </div>
