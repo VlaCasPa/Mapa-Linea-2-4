@@ -2,14 +2,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
+// --- CONFIGURACIÓN DE FIREBASE (PROYECTO CENTRAL: MetroL2-IAM-Central) ---
 const firebaseConfig = {
-    apiKey: "AIzaSyAalo8_88axc-5QAGT8Winp72A1utZwzZg",
-    authDomain: "cerramientos-l2l4-b157e.firebaseapp.com",
-    projectId: "cerramientos-l2l4-b157e",
-    storageBucket: "cerramientos-l2l4-b157e.firebasestorage.app",
-    messagingSenderId: "21699345602",
-    appId: "1:21699345602:web:f715c1203b7516f0cccf5b",
-    measurementId: "G-GRNDM7PZ55"
+    apiKey: "AIzaSyC1XakVAZLUDq3-240Q_KoYYPU5JKCTjzs",
+    authDomain: "metrol2-iam-central.firebaseapp.com",
+    projectId: "metrol2-iam-central",
+    storageBucket: "metrol2-iam-central.firebasestorage.app",
+    messagingSenderId: "78845391762",
+    appId: "1:78845391762:web:d64611cd7c4ef65a24074b"
 };
 
 const app = initializeApp(firebaseConfig);
