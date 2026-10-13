@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAalo8_88axc-5QAGT8Winp72A1utZwzZg",
@@ -16,7 +16,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); 
 const provider = new GoogleAuthProvider();
-let usuarioActual = "anonimo"; 
+
+const REPO_ACTUAL = "Mapa-Linea-2-4";
+const STORAGE_KEY_DISCLAIMER = "ccm2l_mapa_linea_2_4_disclaimer_accepted_v1";
+let usuarioActualGlobal = null;
 
 const btnLoginGoogle = document.getElementById('btn-login-google');
 const btnLoginCorp = document.getElementById('btn-login-corp');
@@ -51,17 +54,101 @@ btnLoginCorp.addEventListener('click', () => {
     }); 
 });
 
-onAuthStateChanged(auth, (user) => {
-    if (user && (user.email.endsWith("@ccmetrolima.com") || ["zebaxx@gmail.com", "permisosccm2l@gmail.com", "tnoriega.arq@gmail.com", "supervisor@gmail.com"].includes(user.email.toLowerCase()))) {
-        usuarioActual = user.email.toLowerCase();
-        pantallaBloqueo.style.display = 'none';
-        appPrincipal.style.display = 'flex';
-        iniciarMotorDelMapa(); 
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        usuarioActualGlobal = user;
+        await validarPermisosYDisclaimer(user);
     } else {
         pantallaBloqueo.style.display = 'flex';
         appPrincipal.style.display = 'none';
+        ocultarDisclaimer();
     }
 });
+
+async function validarPermisosYDisclaimer(user) {
+    const emailUser = user.email.toLowerCase().trim();
+
+    // Resguardo absoluto inmediato para superadministradores
+    if (emailUser === "zebaxx@gmail.com" || emailUser === "vcasasp@ccmetrolima.com" || emailUser === "permisosccm2l@gmail.com" || emailUser === "tnoriega.arq@gmail.com") {
+        pantallaBloqueo.style.display = 'none';
+        verificarDisclaimerUsuario();
+        return;
+    }
+
+    try {
+        const docRef = doc(db, "usuarios", emailUser);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const datosUsuario = docSnap.data();
+            const esAdmin = datosUsuario.es_admin || false;
+            const reposPermitidos = datosUsuario.repositorios_permitidos || datosUsuario.permisos_escritura || [];
+
+            let usuarioAutorizado = (esAdmin || reposPermitidos.includes("todos") || reposPermitidos.includes(REPO_ACTUAL));
+
+            if (usuarioAutorizado) {
+                pantallaBloqueo.style.display = 'none';
+                verificarDisclaimerUsuario();
+            } else {
+                alert("No cuenta con autorización para acceder a este repositorio.");
+                await signOut(auth);
+            }
+        } else {
+            alert("Usuario no registrado en el sistema IAM central.");
+            await signOut(auth);
+        }
+    } catch (error) {
+        console.error("Error al validar contra Firestore:", error);
+        pantallaBloqueo.style.display = 'none';
+        verificarDisclaimerUsuario();
+    }
+}
+
+function verificarDisclaimerUsuario() {
+    if (!localStorage.getItem(STORAGE_KEY_DISCLAIMER)) {
+        mostrarDisclaimer();
+    } else {
+        ocultarDisclaimer();
+        appPrincipal.style.display = 'flex';
+        iniciarMotorDelMapa();
+    }
+}
+
+function mostrarDisclaimer() {
+    const modal = document.getElementById('disclaimer-modal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function ocultarDisclaimer() {
+    const modal = document.getElementById('disclaimer-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+window.aceptarDisclaimer = async function() {
+    if (!usuarioActualGlobal) return;
+    const emailUser = usuarioActualGlobal.email.toLowerCase().trim();
+    localStorage.setItem(STORAGE_KEY_DISCLAIMER, "true");
+
+    try {
+        const discRef = doc(db, "aceptaciones_disclaimer", emailUser);
+        await setDoc(discRef, {
+            email: emailUser,
+            aceptado: true,
+            repositorio: REPO_ACTUAL,
+            fecha_aceptacion: serverTimestamp(),
+            dispositivo: navigator.userAgent
+        }, { merge: true });
+
+        ocultarDisclaimer();
+        appPrincipal.style.display = 'flex';
+        iniciarMotorDelMapa();
+    } catch (err) {
+        console.error("Error al registrar aceptación en Firestore:", err);
+        ocultarDisclaimer();
+        appPrincipal.style.display = 'flex';
+        iniciarMotorDelMapa();
+    }
+};
 
 let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
 window.dataObrasGlobal = [];
@@ -251,7 +338,6 @@ function renderizarTablasCompletas(data, tableId) {
             <td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>
         `;
 
-        // Interacción al posicionar el mouse (Hover): Centrar ID en mapa y resaltar fila
         tr.addEventListener('mouseenter', () => {
             tr.classList.add('fila-resaltada');
             let encontrado = marcadoresGuardados.find(m => m.id === fila.id);
