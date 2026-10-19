@@ -3,8 +3,11 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 
 .mapa-google-gris { filter: grayscale(100%) brightness(1.00) contrast(1.00) opacity(0.75); z-index: 0 !important; }
 
-.leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; z-index: 1001; }
+/* --- MEJORA RESPONSIVE: POPUP CON SCROLL INTERNO PARA MÓVILES --- */
+.leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; z-index: 1001; max-height: 75vh; }
+.leaflet-popup-content { max-height: 70vh; overflow-y: auto; margin: 0; padding: 0; }
 .popup-container { font-family: 'Segoe UI', sans-serif; padding: 12px; }
+
 .auth-box { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 8px; margin-bottom: 8px; border-radius: 4px; font-size: 0.85rem;}
 
 .estado-critico-sin-accion { border-left-color: #dc2626; background-color: #fef2f2; }
@@ -26,6 +29,7 @@ body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-ser
 .btn-pill { background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 3px 8px; border-radius: 9999px; font-size: 0.65rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .btn-pill.active { background: #1e293b; color: white; border-color: #1e293b; }
 
+.celda-divisoria { border-right: 1px solid rgba(203, 213, 225, 0.4); }
 .fila-resaltada { background-color: rgba(59, 130, 246, 0.25) !important; transition: background-color 0.2s ease; }
 
 #panel-chat { position: fixed; bottom: 35px; left: 20px; width: calc(100% - 40px); max-width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000; transition: height 0.3s ease; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e5e7eb;}
