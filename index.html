@@ -3,76 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Autorizaciones - Línea 2 Metro</title>
-    <!-- Leaflet CSS -->
+    <title>Panel Operativo - Línea 2 y Ramal L4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Estilos personalizados -->
-    <link rel="stylesheet" href="style.css">
-    <!-- Tipografía Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Título Flotante Superior -->
-    <div id="titulo-flotante">Permisos de Obra - Línea 2 y Ramal L4</div>
-
-    <!-- Panel de KPIs Ejecutivos (5 Tarjetas) -->
-    <div id="panel-kpis">
-        <div class="kpi-card kpi-critico">
-            <span class="kpi-title">Críticos</span>
-            <span class="kpi-value" id="kpi-rojo">0</span>
-        </div>
-        <div class="kpi-card kpi-por-vencer">
-            <span class="kpi-title">&lt; 4 Meses</span>
-            <span class="kpi-value" id="kpi-amarillo">0</span>
-        </div>
-        <div class="kpi-card kpi-ley">
-            <span class="kpi-title">Ley 31955</span>
-            <span class="kpi-value" id="kpi-naranja">0</span>
-        </div>
-        <div class="kpi-card kpi-tramite">
-            <span class="kpi-title">En Trámite</span>
-            <span class="kpi-value" id="kpi-morado">0</span>
-        </div>
-        <div class="kpi-card kpi-culminado">
-            <span class="kpi-title">Culminadas</span>
-            <span class="kpi-value" id="kpi-verde">0</span>
-        </div>
-    </div>
-
-    <!-- Panel de Filtros y Leyenda -->
-    <div id="panel-filtros">
-        <div class="filtro-seccion">
-            <span class="filtro-label">FILTRAR POR ESTRUCTURA</span>
-            <div class="filtro-scroll" id="contenedor-filtros-id">
-                <button class="btn-pill active" data-id="Todos">Todos</button>
-            </div>
-        </div>
-        
-        <div class="filtro-seccion">
-            <span class="filtro-label">LEYENDA Y ESTADO</span>
-            <div class="filtro-scroll">
-                <button class="btn-pill active" data-estado="Todos">Mostrar Todos</button>
-                <button class="btn-pill btn-critico" data-estado="Criticos">🔴 Críticas/Vencidas</button>
-                <button class="btn-pill btn-meses" data-estado="Menor4Meses">🟡 &lt; 4 Meses</button>
-                <button class="btn-pill btn-tramite" data-estado="Tramite">🟣 En Trámite</button>
-                <button class="btn-pill btn-culminado" data-estado="Culminado">🟢 Culminadas</button>
-                <button class="btn-pill btn-ley" data-estado="Ley31955">🟠 Ley N° 31955</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contenedor del Mapa -->
-    <div id="map"></div>
-    
-    <!-- Botón Flotante WhatsApp con Firma -->
-    <button id="btn-whatsapp" class="btn-float" title="Copiar reporte resumen">
-        <span class="btn-text-main">📋 Reporte WhatsApp</span>
-        <span class="btn-text-sub">diseñado por Vladimir Casas</span>
-    </button>
-
-    <!-- Librerías JS y Script principal -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="script.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
+
+    <!-- 1. VENTANA MODAL DE INICIO DE SESIÓN CORPORATIVO (IAM CENTRAL) -->
+    <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-[9999]" style="display: none;">
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
+            <p class="text-sm text-slate-500 mb-6">Administración Contractual L2/L4</p>
+            <div class="space-y-4">
+                <input type="email" id="email-corp" placeholder="Correo Corporativo" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                <input type="password" id="pass-corp" placeholder="Contraseña" class="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                <button id="btn-login-corp" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors">Ingresar al Sistema</button>
+                <div class="relative flex items-center py-2"><div class="flex-grow border-t border-gray-300"></div><span class="flex-shrink-0 mx-4 text-gray-400 text-xs">Opciones Alternas</span><div class="flex-grow border-t border-gray-300"></div></div>
+                <button id="btn-login-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold py-3 px-4 rounded-lg flex justify-center items-center gap-2 transition-colors">
+                    <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> 
+                    Ingresar con Google
+                </button>
+            </div>
+            <p id="mensaje-error" class="hidden mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"></p>
+        </div>
+    </div>
+
+    <!-- 2. VENTANA MODAL DE ADVERTENCIA Y CONFIDENCIALIDAD (DISCLAIMER) -->
+    <div id="disclaimer-modal" class="modal-overlay-disclaimer" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header-disc">
+                <h3>Aviso de Confidencialidad y Uso Restringido</h3>
+            </div>
+            <div class="modal-body-disc">
+                <p>El presente aplicativo y repositorio constituyen una herramienta de gestión operativa de uso exclusivo para el personal autorizado del <strong>Consorcio Constructor Metro 2 de Lima (CCM2L)</strong>. Queda terminantemente prohibida la reproducción, distribución, comercialización o uso de la presente información para fines ajenos a los contractuales y de supervisión de obra.</p>
+                <p>El acceso no autorizado, la extracción, el uso indebido o la divulgación de los datos contenidos contravienen las normas internas de seguridad de la información, el deber de confidencialidad y la <strong>Ley N° 30096 (Ley de Delitos Informáticos)</strong> y la <strong>Ley N° 29733 (Ley de Protección de Datos Personales)</strong>, quedando el infractor sujeto a las sanciones laborales correspondientes y a las responsabilidades civiles y penales previstas en la legislación de la República del Perú.</p>
+            </div>
+            <div class="modal-footer-disc">
+                <button id="btn-aceptar-disclaimer" type="button" onclick="aceptarDisclaimer()">HE LEÍDO Y ACEPTO LOS TÉRMINOS DE CONFIDENCIALIDAD</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-principal" style="display: none;" class="flex-col w-full max-w-[1920px] mx-auto p-2 md:p-4 h-full overflow-hidden">
+        <header class="relative flex flex-col lg:flex-row justify-between items-start lg:items-center p-2.5 lg:px-6 rounded-xl shadow-sm border border-gray-300 mb-3 shrink-0 gap-2.5 w-full" style="background-color: #FAFAFA;">
+            <div class="shrink-0 w-full lg:w-auto pr-20 lg:pr-0 order-1">
+                <h1 class="text-base md:text-xl font-black text-slate-800 tracking-tight leading-tight">Autorizaciones Municipales</h1>
+                <p class="text-[0.6rem] md:text-xs text-slate-700 font-semibold mt-0.5">Línea 2 y Ramal L4 - Consorcio Constructor</p>
+            </div>
+            
+            <div class="flex w-full lg:w-auto overflow-x-auto no-scrollbar justify-between lg:justify-end gap-1 md:gap-4 items-center shrink-0 order-3 lg:order-2">
+                <div class="flex flex-col items-center px-1 border-r border-gray-400 shrink-0"><span class="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-700 uppercase">Sin Acción</span><span id="kpi-rojo" class="text-lg md:text-2xl font-black text-red-600">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-400 shrink-0"><span class="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-700 uppercase">En Trámite</span><span id="kpi-morado" class="text-lg md:text-2xl font-black text-fuchsia-700">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-400 shrink-0"><span class="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-700 uppercase">&lt; 4 Meses</span><span id="kpi-amarillo" class="text-lg md:text-2xl font-black text-amber-700">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r border-gray-400 shrink-0"><span class="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-700 uppercase">Ley 31955</span><span id="kpi-naranja" class="text-lg md:text-2xl font-black text-orange-700">0</span></div>
+                <div class="flex flex-col items-center px-1 border-r lg:border-none border-gray-400 shrink-0"><span class="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-700 uppercase">Culminadas</span><span id="kpi-verde" class="text-lg md:text-2xl font-black text-emerald-700">0</span></div>
+            </div>
+
+            <div class="absolute top-2.5 right-2.5 lg:static flex flex-col lg:flex-row gap-1 z-10 order-2 lg:order-3 items-end lg:items-center">
+                <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 lg:px-3 lg:py-1.5 rounded-lg shadow-sm font-bold text-[0.6rem] lg:text-xs flex items-center transition-colors order-1 lg:order-2">📊 Dashboard PDF</a>
+                <button id="btn-reporte-txt" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-2 py-1 lg:px-3 lg:py-1.5 rounded-lg shadow-sm font-bold text-[0.6rem] lg:text-xs transition-colors order-2 lg:order-1">
+                    <span class="inline lg:hidden">📄 TXT</span>
+                    <span class="hidden lg:inline">📄 Copiar TXT</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-4 flex-grow min-h-0 overflow-y-auto lg:overflow-y-hidden pb-16 lg:pb-0 w-full">
+            <div class="w-full lg:w-2/3 relative flex flex-col bg-white p-1.5 md:p-2 rounded-xl shadow-sm border border-gray-200 h-[65vh] lg:h-full shrink-0">
+                <details open class="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur-sm p-2.5 border border-slate-200 rounded-lg shadow-sm w-[85%] sm:w-auto max-w-sm">
+                    <summary class="text-[0.6rem] font-bold text-slate-500 uppercase cursor-pointer list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">Aislamiento de Riesgo ▼</summary>
+                    <div class="flex flex-wrap gap-1 mt-2 filtro-seccion">
+                        <button class="btn-pill active" data-estado="Todos">Vista General</button>
+                        <button class="btn-pill" data-estado="Criticos">🔴 Sin Acción</button>
+                        <button class="btn-pill" data-estado="Tramite">🟣 En Trámite</button>
+                        <button class="btn-pill" data-estado="Menor4Meses">🟡 Alerta Preventiva</button>
+                        <button class="btn-pill" data-estado="Ley31955">🟠 Ley N° 31955</button>
+                        <button class="btn-pill" data-estado="Culminado">🟢 Culminadas</button>
+                        <button class="btn-pill border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100" data-estado="Mincul">🏛️ MINCUL</button>
+                        <!-- NUEVO BOTÓN PROVIAS -->
+                        <button class="btn-pill border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100" data-estado="Provias">🛣️ PROVIAS</button>
+                    </div>
+                </details>
+                
+                <div id="map" class="flex-grow z-0 rounded-lg"></div>
+
+                <div class="absolute bottom-2 right-32 z-[400] pointer-events-none bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded shadow-xs">
+                    <span class="text-[0.6rem] text-slate-600 font-medium uppercase tracking-tight">Diseñado por <b class="text-slate-800">Vladimir Casas</b></span>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-1/3 flex flex-col gap-4 shrink-0 lg:shrink lg:h-full lg:min-h-0 pb-6 lg:pb-0">
+                <div class="rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink" style="background-color: #C2DEF0;">
+                    <div class="p-3 border-b border-gray-300 rounded-t-xl" style="background-color: #a9cfe8;">
+                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Permisos de Obras</h3>
+                    </div>
+                    <div class="tabla-scroll flex-grow relative rounded-b-xl" style="background-color: #C2DEF0;">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="text-slate-700 sticky top-0 z-10 shadow-sm" style="background-color: #b5d7ed;">
+                                <tr>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider w-16 border-r border-slate-300/40">ID</th>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider border-r border-slate-300/40">Resolución Base</th>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider text-center w-28">Contingencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-obras-global" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="rounded-xl shadow-sm border border-gray-200 flex flex-col h-[400px] lg:h-1/2 shrink-0 lg:shrink" style="background-color: #EDDFC2;">
+                    <div class="p-3 border-b border-gray-300 rounded-t-xl" style="background-color: #e5d3ac;">
+                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide">Permisos de Desvíos</h3>
+                    </div>
+                    <div class="tabla-scroll flex-grow relative rounded-b-xl" style="background-color: #EDDFC2;">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead class="text-slate-700 sticky top-0 z-10 shadow-sm" style="background-color: #ebd7b3;">
+                                <tr>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider w-16 border-r border-slate-300/40">ID</th>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider border-r border-slate-300/40">Resolución Base</th>
+                                    <th class="p-2.5 font-bold uppercase tracking-wider text-center w-28">Contingencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-desvios-global" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-chat" class="chat-minimizada">
+            <div id="chat-header"><span class="flex items-center gap-2 text-sm font-bold">🤖 Consultor IA (beta)</span></div>
+            <div id="chat-mensajes"><div class="msg-bot">Hola. Consulta estados o vigencias (Ej: "¿Qué obras están por vencer?").</div></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Pregunta aquí...">
+                <button id="btn-enviar-chat">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
 </body>
 </html>
