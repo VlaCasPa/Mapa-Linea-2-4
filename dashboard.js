@@ -55,7 +55,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const tbProvias = document.querySelector('#tb-provias tbody');
         if (tbProvias) {
-            let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[10px] bg-sky-50/30 font-bold">${p.id}</td><td class="text-sky-800 text-[8.5px] bg-sky-50/30 break-all leading-tight">${p.res}</td><td class="text-slate-500 font-bold bg-sky-50/30">${p.fecha}</td></tr>`).join('');
+            let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[9px] bg-sky-50/30 font-bold">${p.id}</td><td class="text-sky-800 text-[8px] bg-sky-50/30 break-all leading-tight">${p.res}</td><td class="text-slate-500 text-[8.5px] font-bold bg-sky-50/30">${p.fecha}</td></tr>`).join('');
             tbProvias.innerHTML = htmlP;
         }
     };
