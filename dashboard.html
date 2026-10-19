@@ -14,7 +14,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
         body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
         .hoja-a4 { background: white; width: 794px; height: 1123px; padding: 30px 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); box-sizing: border-box; color: #1e293b; margin: 0 auto; overflow: hidden; position: relative; }
-        .modo-impresion { margin: 0 !important; box-shadow: none !important; border: none !important; }
+        .modo-impresion { margin: 0 !important; box-shadow: none !important; border: none !important; transform: none !important; }
         .tabla-lean { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 10px;}
         .tabla-lean th { background-color: #f1f5f9; padding: 5px 8px; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-weight: 800; color: #475569; text-align: left; }
         .tabla-lean td { padding: 4px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600;}
@@ -85,6 +85,7 @@
                     </div>
                 </div>
 
+                <!-- Tablas Mincul y Provias (Ajuste de Altura para PDF) -->
                 <div class="flex gap-4 mt-1">
                     <div class="w-1/2">
                         <h3 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-1 border-b border-indigo-200 pb-0.5">🏛️ PATRIMONIO HISTÓRICO (MIN. CULTURA)</h3>
@@ -94,7 +95,7 @@
                         </table>
                     </div>
                     <div class="w-1/2">
-                        <h3 class="text-[10px] font-black text-sky-700 uppercase tracking-widest mb-1 border-b border-sky-200 pb-0.5">🛣️ VIAL NACIONAL (PROVIAS L4)[cite: 1]</h3>
+                        <h3 class="text-[10px] font-black text-sky-700 uppercase tracking-widest mb-1 border-b border-sky-200 pb-0.5">🛣️ VIAL NACIONAL (PROVIAS L4)</h3>
                         <table class="tabla-lean tabla-sky" id="tb-provias">
                             <thead><tr><th width="25%">ID</th><th width="55%">Resolución / Autorización</th><th width="20%">Fecha</th></tr></thead>
                             <tbody></tbody>
@@ -103,8 +104,9 @@
                 </div>
             </div>
 
+            <!-- Firma inferior -->
             <div class="absolute bottom-3 left-0 w-full text-center text-[7.5px] text-slate-400 uppercase tracking-widest font-bold px-10">
-                Metodología Lean Construction & PMBOK • Documento Generado Automáticamente • Diseñado por Vladimir Casas
+                Resumen de autorizaciones - Diseñado por Vladimir Casas
             </div>
         </div>
     </div>
