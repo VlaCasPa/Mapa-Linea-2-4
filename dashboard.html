@@ -12,92 +12,56 @@
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-        
         body { background-color: #e2e8f0; font-family: 'Inter', sans-serif; margin: 0; }
-        
-        /* Contenedor A4 Estricto y Centrado Absoluto en Web y Celular */
-        .hoja-a4 { 
-            background: white; 
-            width: 794px; 
-            height: 1123px; 
-            padding: 35px 40px; 
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); 
-            box-sizing: border-box;
-            color: #1e293b;
-            margin: 0 auto;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .modo-impresion {
-            margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-        }
-
-        .tabla-lean { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;}
-        .tabla-lean th { background-color: #f1f5f9; padding: 6px 8px; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-weight: 800; color: #475569; text-align: left; }
-        .tabla-lean td { padding: 6px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600;}
+        .hoja-a4 { background: white; width: 794px; height: 1123px; padding: 30px 40px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); box-sizing: border-box; color: #1e293b; margin: 0 auto; overflow: hidden; position: relative; }
+        .modo-impresion { margin: 0 !important; box-shadow: none !important; border: none !important; }
+        .tabla-lean { width: 100%; border-collapse: collapse; font-size: 9.5px; margin-bottom: 10px;}
+        .tabla-lean th { background-color: #f1f5f9; padding: 5px 8px; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-weight: 800; color: #475569; text-align: left; }
+        .tabla-lean td { padding: 4px 8px; border-bottom: 1px solid #e2e8f0; font-weight: 600;}
         .tabla-roja th { border-bottom-color: #fca5a5; background-color: #fef2f2; color: #b91c1c; }
         .tabla-morada th { border-bottom-color: #f0abfc; background-color: #fdf4ff; color: #a21caf; }
+        .tabla-indigo th { border-bottom-color: #818cf8; background-color: #eef2ff; color: #4f46e5; }
+        .tabla-sky th { border-bottom-color: #38bdf8; background-color: #f0f9ff; color: #0284c7; }
     </style>
 </head>
 <body class="text-slate-800 font-sans">
-
     <div class="w-full min-h-screen flex flex-col items-center p-2 lg:p-8 overflow-x-auto">
-        
         <div class="w-full max-w-[794px] flex justify-between mb-4 sticky left-4 shrink-0 px-2 lg:px-0">
             <a href="index.html" class="bg-white hover:bg-slate-50 text-slate-700 font-bold py-2 px-4 rounded shadow-sm border border-slate-300 text-xs lg:text-sm transition-colors">⬅ Volver al Mapa Operativo</a>
             <button id="btn-exportar-pdf" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md flex gap-2 text-xs lg:text-sm transition-colors">⬇️ Exportar PDF</button>
         </div>
 
         <div id="lienzo-pdf" class="hoja-a4 shrink-0">
-            
-            <header class="flex justify-between items-end border-b-4 border-slate-900 pb-3 mb-6">
+            <header class="flex justify-between items-end border-b-4 border-slate-900 pb-2 mb-4">
                 <div>
-                    <h1 class="text-3xl font-black tracking-tight leading-none text-slate-900">INFORME DE PERMISOS DE OBRA</h1>
-                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">Línea 2 y Ramal L4 - Consorcio Constructor</p>
+                    <h1 class="text-2xl font-black tracking-tight leading-none text-slate-900">INFORME DE PERMISOS DE OBRA</h1>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Línea 2 y Ramal L4 - Consorcio Constructor</p>
                 </div>
                 <div class="text-right">
-                    <div class="text-sm font-bold text-slate-800" id="dash-fecha">--/--/----</div>
-                    <div class="text-[10px] text-slate-500 font-bold uppercase" id="dash-hora">--:--</div>
+                    <div class="text-xs font-bold text-slate-800" id="dash-fecha">--/--/----</div>
+                    <div class="text-[9px] text-slate-500 font-bold uppercase" id="dash-hora">--:--</div>
                 </div>
             </header>
 
-            <div class="flex gap-6 mb-6 h-52">
-                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-slate-50 flex flex-col relative">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Estado Global del Portafolio</h3>
-                    <div class="flex-grow relative w-full h-full">
-                        <canvas id="chart-portafolio"></canvas>
-                    </div>
+            <div class="flex gap-4 mb-4 h-48">
+                <div class="w-1/2 border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex flex-col relative">
+                    <h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Estado Global del Portafolio</h3>
+                    <div class="flex-grow relative w-full h-full"><canvas id="chart-portafolio"></canvas></div>
                 </div>
-
-                <div class="w-1/2 flex flex-col gap-4">
-                    <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Carga por Jurisdicción</h3>
-                        <div class="flex-grow relative w-full h-full"><canvas id="chart-jurisdiccion"></canvas></div>
-                    </div>
-                    <div class="border border-slate-200 rounded-lg p-3 bg-white h-1/2 flex flex-col">
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Lookahead de Vencimientos (Próx. 120d)</h3>
-                        <div class="flex-grow relative w-full h-full"><canvas id="chart-lookahead"></canvas></div>
-                    </div>
+                <div class="w-1/2 flex flex-col gap-3">
+                    <div class="border border-slate-200 rounded-lg p-2 bg-white h-1/2 flex flex-col"><h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Carga por Jurisdicción</h3><div class="flex-grow relative w-full h-full"><canvas id="chart-jurisdiccion"></canvas></div></div>
+                    <div class="border border-slate-200 rounded-lg p-2 bg-white h-1/2 flex flex-col"><h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest text-center mb-1">Lookahead (Próx. 120d)</h3><div class="flex-grow relative w-full h-full"><canvas id="chart-lookahead"></canvas></div></div>
                 </div>
             </div>
 
-            <div class="flex gap-4 mb-6 h-48">
-                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2">Top 10 - Obras (Mayor Prioridad)</h3>
-                    <div class="flex-grow relative w-full h-full"><canvas id="chart-obras-criticas"></canvas></div>
-                </div>
-                <div class="w-1/2 border border-slate-200 rounded-lg p-3 bg-white flex flex-col">
-                    <h3 class="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center mb-2">Top 10 - Desvíos (Mayor Prioridad)</h3>
-                    <div class="flex-grow relative w-full h-full"><canvas id="chart-desvios-criticos"></canvas></div>
-                </div>
+            <div class="flex gap-4 mb-4 h-40">
+                <div class="w-1/2 border border-slate-200 rounded-lg p-2 bg-white flex flex-col"><h3 class="text-[9px] font-bold text-slate-700 uppercase tracking-widest text-center mb-1">Top 10 - Obras (Mayor Prioridad)</h3><div class="flex-grow relative w-full h-full"><canvas id="chart-obras-criticas"></canvas></div></div>
+                <div class="w-1/2 border border-slate-200 rounded-lg p-2 bg-white flex flex-col"><h3 class="text-[9px] font-bold text-slate-700 uppercase tracking-widest text-center mb-1">Top 10 - Desvíos (Mayor Prioridad)</h3><div class="flex-grow relative w-full h-full"><canvas id="chart-desvios-criticos"></canvas></div></div>
             </div>
 
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
                 <div>
-                    <h3 class="text-[11px] font-black text-red-700 uppercase tracking-widest mb-1 border-b border-red-200 pb-1">🔴 ACCIÓN URGENTE (Críticos Sin Gestión)</h3>
+                    <h3 class="text-[10px] font-black text-red-700 uppercase tracking-widest mb-1 border-b border-red-200 pb-0.5">🔴 ACCIÓN URGENTE (Críticos Sin Gestión)</h3>
                     <table class="tabla-lean tabla-roja" id="tb-urgente">
                         <thead><tr><th width="12%">ID</th><th width="15%">Tipo</th><th width="43%">Resolución Base</th><th width="30%">Contingencia</th></tr></thead>
                         <tbody></tbody>
@@ -106,29 +70,44 @@
 
                 <div class="flex gap-4">
                     <div class="w-1/2">
-                        <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 OBRAS EN TRÁMITE</h3>
+                        <h3 class="text-[10px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-0.5">🟣 OBRAS EN TRÁMITE</h3>
                         <table class="tabla-lean tabla-morada" id="tb-obra-tramite">
                             <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
                     <div class="w-1/2">
-                        <h3 class="text-[11px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-1">🟣 DESVÍOS EN TRÁMITE</h3>
+                        <h3 class="text-[10px] font-black text-fuchsia-700 uppercase tracking-widest mb-1 border-b border-fuchsia-200 pb-0.5">🟣 DESVÍOS EN TRÁMITE</h3>
                         <table class="tabla-lean tabla-morada" id="tb-desvio-tramite">
                             <thead><tr><th width="15%">ID</th><th width="50%">Resolución Base</th><th width="35%">Atraso Municipal</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
                 </div>
+
+                <div class="flex gap-4 mt-1">
+                    <div class="w-1/2">
+                        <h3 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest mb-1 border-b border-indigo-200 pb-0.5">🏛️ PATRIMONIO HISTÓRICO (MIN. CULTURA)</h3>
+                        <table class="tabla-lean tabla-indigo" id="tb-patrimonio">
+                            <thead><tr><th width="12%">ID</th><th width="20%">Fase</th><th width="48%">Resolución</th><th width="20%">Fecha</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="w-1/2">
+                        <h3 class="text-[10px] font-black text-sky-700 uppercase tracking-widest mb-1 border-b border-sky-200 pb-0.5">🛣️ VIAL NACIONAL (PROVIAS L4)[cite: 1]</h3>
+                        <table class="tabla-lean tabla-sky" id="tb-provias">
+                            <thead><tr><th width="25%">ID</th><th width="55%">Resolución / Autorización</th><th width="20%">Fecha</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <div class="absolute bottom-6 left-0 w-full text-center text-[8px] text-slate-400 uppercase tracking-widest font-bold px-10">
+            <div class="absolute bottom-3 left-0 w-full text-center text-[7.5px] text-slate-400 uppercase tracking-widest font-bold px-10">
                 Metodología Lean Construction & PMBOK • Documento Generado Automáticamente • Diseñado por Vladimir Casas
             </div>
-
         </div>
     </div>
-
     <script src="dashboard.js"></script>
 </body>
 </html>
