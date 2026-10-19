@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Operativo - Línea 2 y Ramal L4</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Operativo - Línea 2 y Ramal L4</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-slate-50 text-gray-800 font-sans antialiased relative h-screen flex flex-col overflow-hidden">
 
-    <!-- 1. VENTANA MODAL DE INICIO DE SESIÓN CORPORATIVO (IAM CENTRAL) -->
     <div id="pantalla-bloqueo" class="fixed inset-0 bg-slate-900 flex flex-col justify-center items-center z-[9999]" style="display: none;">
         <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-[90%] max-w-[400px] text-center border-t-4 border-blue-600">
             <h2 class="text-2xl font-bold text-slate-800 mb-2">Sistema de Control</h2>
@@ -31,7 +30,6 @@
         </div>
     </div>
 
-    <!-- 2. VENTANA MODAL DE ADVERTENCIA Y CONFIDENCIALIDAD (DISCLAIMER) -->
     <div id="disclaimer-modal" class="modal-overlay-disclaimer" style="display: none;">
         <div class="modal-box">
             <div class="modal-header-disc">
