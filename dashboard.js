@@ -47,20 +47,10 @@ window.addEventListener('DOMContentLoaded', () => {
             let htmlM = '';
             for (const [id, fases] of Object.entries(dataMinCultura)) {
                 fases.forEach((f, index) => {
-                    // Diseño Mincul con Celdas Combinadas (rowspan) para el ID
                     if(index === 0) {
-                        htmlM += `<tr class="border-b border-indigo-100">
-                            <td rowspan="${fases.length}" class="text-slate-800 text-[10px] bg-indigo-50/50 text-center border-r border-indigo-100 align-middle font-bold">${id}</td>
-                            <td class="text-indigo-700 font-bold bg-white">${f.fase}</td>
-                            <td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td>
-                            <td class="text-slate-500 font-bold bg-white">${f.fecha}</td>
-                        </tr>`;
+                        htmlM += `<tr class="border-b border-indigo-100"><td rowspan="${fases.length}" class="text-slate-800 text-[10px] bg-indigo-50/50 text-center border-r border-indigo-100 align-middle font-bold">${id}</td><td class="text-indigo-700 font-bold bg-white">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-white">${f.fecha}</td></tr>`;
                     } else {
-                        htmlM += `<tr class="border-b border-indigo-100">
-                            <td class="text-indigo-700 font-bold bg-white">${f.fase}</td>
-                            <td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td>
-                            <td class="text-slate-500 font-bold bg-white">${f.fecha}</td>
-                        </tr>`;
+                        htmlM += `<tr class="border-b border-indigo-100"><td class="text-indigo-700 font-bold bg-white">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-white">${f.fecha}</td></tr>`;
                     }
                 });
             }
@@ -69,7 +59,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const tbProvias = document.querySelector('#tb-provias tbody');
         if (tbProvias) {
-            // Diseño Provias con reducción de altura (py-0.5)
             let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[9px] bg-sky-50/30 font-bold py-0.5">${p.id}</td><td class="text-sky-800 text-[8px] bg-sky-50/30 break-all leading-tight py-0.5">${p.res}</td><td class="text-slate-500 text-[8.5px] font-bold bg-sky-50/30 py-0.5">${p.fecha}</td></tr>`).join('');
             tbProvias.innerHTML = htmlP;
         }
@@ -166,8 +155,35 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-exportar-pdf').addEventListener('click', (e) => {
-        let btn = e.target; let ori = btn.innerHTML; btn.innerHTML = "⏳ Procesando PDF...";
-        window.scrollTo(0, 0); const el = document.getElementById('lienzo-pdf'); el.classList.add('modo-impresion');
-        html2pdf().set({ margin: 0, filename: `Informe_Estrategico_L2L4_${new Date().getTime()}.pdf`, image: { type: 'jpeg', quality: 1.0 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save().then(() => { el.classList.remove('modo-impresion'); btn.innerHTML = "✅ Informe Descargado"; setTimeout(() => btn.innerHTML = ori, 3000); });
+        let btn = e.target; 
+        let ori = btn.innerHTML; 
+        btn.innerHTML = "⏳ Procesando PDF...";
+        
+        // El arreglo maestro para PC: Anula el centrado temporalmente
+        const padre = document.getElementById('contenedor-padre');
+        const lienzo = document.getElementById('lienzo-pdf');
+        
+        padre.classList.remove('items-center');
+        padre.classList.add('items-start');
+        lienzo.classList.add('modo-impresion');
+        
+        window.scrollTo(0, 0); 
+
+        html2pdf().set({ 
+            margin: 0, 
+            filename: `Informe_Estrategico_L2L4_${new Date().getTime()}.pdf`, 
+            image: { type: 'jpeg', quality: 1.0 }, 
+            html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794 }, 
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        }).from(lienzo).save().then(() => { 
+            
+            // Restaura el centrado en PC
+            lienzo.classList.remove('modo-impresion'); 
+            padre.classList.remove('items-start');
+            padre.classList.add('items-center');
+            
+            btn.innerHTML = "✅ Informe Descargado"; 
+            setTimeout(() => btn.innerHTML = ori, 3000); 
+        });
     });
 });
