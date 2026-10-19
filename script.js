@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getAuth, signInWithPopup, signInWithEmailAndPassword, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-// --- CONFIGURACIÓN DE FIREBASE (PROYECTO CENTRAL: MetroL2-IAM-Central) ---
+// --- CONFIGURACIÓN DE FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyC1XakVAZLUDq3-240Q_KoYYPU5JKCTjzs",
     authDomain: "metrol2-iam-central.firebaseapp.com",
@@ -67,25 +67,19 @@ onAuthStateChanged(auth, async (user) => {
 
 async function validarPermisosYDisclaimer(user) {
     const emailUser = user.email.toLowerCase().trim();
-
-    // Resguardo absoluto inmediato para superadministradores
-    if (emailUser === "zebaxx@gmail.com" || emailUser === "vcasasp@ccmetrolima.com" || emailUser === "permisosccm2l@gmail.com" || emailUser === "tnoriega.arq@gmail.com") {
+    if (["zebaxx@gmail.com", "vcasasp@ccmetrolima.com", "permisosccm2l@gmail.com", "tnoriega.arq@gmail.com"].includes(emailUser)) {
         pantallaBloqueo.style.display = 'none';
         verificarDisclaimerUsuario();
         return;
     }
-
     try {
         const docRef = doc(db, "usuarios", emailUser);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
             const datosUsuario = docSnap.data();
             const esAdmin = datosUsuario.es_admin || false;
             const reposPermitidos = datosUsuario.repositorios_permitidos || datosUsuario.permisos_escritura || [];
-
             let usuarioAutorizado = (esAdmin || reposPermitidos.includes("todos") || reposPermitidos.includes(REPO_ACTUAL));
-
             if (usuarioAutorizado) {
                 pantallaBloqueo.style.display = 'none';
                 verificarDisclaimerUsuario();
@@ -105,57 +99,46 @@ async function validarPermisosYDisclaimer(user) {
 }
 
 function verificarDisclaimerUsuario() {
-    if (!localStorage.getItem(STORAGE_KEY_DISCLAIMER)) {
-        mostrarDisclaimer();
-    } else {
-        ocultarDisclaimer();
-        appPrincipal.style.display = 'flex';
-        iniciarMotorDelMapa();
-    }
+    if (!localStorage.getItem(STORAGE_KEY_DISCLAIMER)) mostrarDisclaimer();
+    else { ocultarDisclaimer(); appPrincipal.style.display = 'flex'; iniciarMotorDelMapa(); }
 }
 
-function mostrarDisclaimer() {
-    const modal = document.getElementById('disclaimer-modal');
-    if (modal) modal.style.display = 'flex';
-}
-
-function ocultarDisclaimer() {
-    const modal = document.getElementById('disclaimer-modal');
-    if (modal) modal.style.display = 'none';
-}
+function mostrarDisclaimer() { const modal = document.getElementById('disclaimer-modal'); if (modal) modal.style.display = 'flex'; }
+function ocultarDisclaimer() { const modal = document.getElementById('disclaimer-modal'); if (modal) modal.style.display = 'none'; }
 
 window.aceptarDisclaimer = async function() {
     if (!usuarioActualGlobal) return;
     const emailUser = usuarioActualGlobal.email.toLowerCase().trim();
     localStorage.setItem(STORAGE_KEY_DISCLAIMER, "true");
-
     try {
         const discRef = doc(db, "aceptaciones_disclaimer", emailUser);
-        await setDoc(discRef, {
-            email: emailUser,
-            aceptado: true,
-            repositorio: REPO_ACTUAL,
-            fecha_aceptacion: serverTimestamp(),
-            dispositivo: navigator.userAgent
-        }, { merge: true });
-
-        ocultarDisclaimer();
-        appPrincipal.style.display = 'flex';
-        iniciarMotorDelMapa();
+        await setDoc(discRef, { email: emailUser, aceptado: true, repositorio: REPO_ACTUAL, fecha_aceptacion: serverTimestamp(), dispositivo: navigator.userAgent }, { merge: true });
+        ocultarDisclaimer(); appPrincipal.style.display = 'flex'; iniciarMotorDelMapa();
     } catch (err) {
-        console.error("Error al registrar aceptación en Firestore:", err);
-        ocultarDisclaimer();
-        appPrincipal.style.display = 'flex';
-        iniciarMotorDelMapa();
+        ocultarDisclaimer(); appPrincipal.style.display = 'flex'; iniciarMotorDelMapa();
     }
 };
 
 let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
-window.dataObrasGlobal = [];
-window.dataDesviosGlobal = [];
+window.dataObrasGlobal = []; window.dataDesviosGlobal = [];
 const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
-
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
+
+// BASE DE DATOS: PATRIMONIO HISTÓRICO (MIN. CULTURA)
+const dataMinCultura = {
+    "E13": [
+        { fase: "Primera Fase", res: "RDN° 000116-2023-DGPC/MC", fecha: "09/06/2023" },
+        { fase: "Segunda Fase", res: "Resolución Directoral N° 000244-2024-DGPC-VMPCIC/MC", fecha: "26/09/2024" },
+        { fase: "Tercera Fase", res: "Resolución Directoral N° 000037-2026-DGPC-VMPCIC/MC", fecha: "03/07/2026" }
+    ],
+    "PV12": [
+        { fase: "Primera Fase", res: "RDN° 000116-2023-DGPC/MC", fecha: "09/06/2023" },
+        { fase: "Segunda Fase", res: "Resolución Directoral N° 000244-2024-DGPC-VMPCIC/MC", fecha: "26/09/2024" }
+    ],
+    "PV13": [
+        { fase: "Segunda Fase", res: "Resolución Directoral N° 000244-2024-DGPC-VMPCIC/MC", fecha: "26/09/2024" }
+    ]
+};
 
 function iniciarMotorDelMapa() {
     if (map) return; 
@@ -188,6 +171,7 @@ function iniciarMotorDelMapa() {
 
                     let lat = parseFloat(item.Latitud.toString().replace(/,/g, '.'));
                     let lon = parseFloat(item.Longitud.toString().replace(/,/g, '.'));
+                    
                     if (!isNaN(lat)) {
                         let marker = L.circleMarker([lat, lon], { radius: 7, fillColor: "#2563EB", color: "#ffffff", weight: 2, fillOpacity: 0.95 });
                         aplicarEstiloMarcador(marker, sev);
@@ -195,12 +179,26 @@ function iniciarMotorDelMapa() {
                         let comObra = item.Aut_Obra_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Obra_Comentarios}</div></details>` : '';
                         let comDesvio = item.Aut_Desvio_Comentarios ? `<details class="popup-details mt-2"><summary class="text-blue-600 font-semibold cursor-pointer text-[0.7rem]">💬 Ver sustento...</summary><div class="mt-1 text-[0.7rem] text-gray-600 italic bg-white p-2 border rounded shadow-inner">${item.Aut_Desvio_Comentarios}</div></details>` : '';
 
+                        // INYECCIÓN CULTURAL
+                        let htmlMinCultura = '';
+                        if (dataMinCultura[item.ID]) {
+                            let historialFases = dataMinCultura[item.ID].map(f => 
+                                `<div class="mb-2 border-b border-indigo-100 pb-1 last:border-0 last:mb-0 last:pb-0">
+                                    <span class="etiqueta-fase">${f.fase}</span><br>
+                                    <span class="text-[0.7rem] text-slate-700 font-bold break-all">Res: ${f.res}</span><br>
+                                    <span class="text-[0.65rem] text-slate-500">Emitida: ${f.fecha}</span>
+                                </div>`
+                            ).join('');
+                            htmlMinCultura = `<div class="auth-box estado-patrimonio mt-2"><span class="font-bold block mb-1 text-indigo-900">🏛️ Patrimonio (Min. Cultura)</span>${historialFases}</div>`;
+                        }
+
                         marker.bindPopup(`
                             <div class="popup-container">
                                 <h3 class="popup-title">${item.ID}: ${item.Nombre}</h3>
                                 <div class="popup-subtitle">📍 ${item.Municipalidad} | ${item.Linea} - ${item.Tipo}</div>
                                 <div class="auth-box ${obtenerClaseCSS(evalObra.estadoRiesgo)}"><span class="font-bold block mb-1 text-slate-700">🚧 Autorización de Obra</span>Res: ${item.Aut_Obra_Resolucion || 'N/A'}<br>Estado: <b class="text-slate-800">${formatearTextoPopup(evalObra)}</b>${comObra}</div>
                                 <div class="auth-box ${obtenerClaseCSS(evalDesvio.estadoRiesgo)}"><span class="font-bold block mb-1 text-slate-700">🚦 Desvío de Tránsito</span>Res: ${item.Aut_Desvio_Resolucion || 'N/A'}<br>Estado: <b class="text-slate-800">${formatearTextoPopup(evalDesvio)}</b>${comDesvio}</div>
+                                ${htmlMinCultura}
                             </div>
                         `);
                         marker.bindTooltip(item.ID, { permanent: true, direction: 'right', className: 'font-bold bg-white/90 px-1 rounded shadow-sm text-[0.65rem]' });
@@ -235,21 +233,10 @@ function iniciarMotorDelMapa() {
 
 function evaluarRiesgo(dias, comentarios) {
     let dNum = parseInt(dias); let dStr = normalizarTexto(dias); let tc = normalizarTexto(comentarios);
-    let esC = dStr === "culminado" || tc.includes("culminado");
-    let esT = dStr === "en tramite" || tc.includes("tramite");
-    let esE = dStr === "exonerado" || tc.includes("exonerado");
+    let esC = dStr === "culminado" || tc.includes("culminado"); let esT = dStr === "en tramite" || tc.includes("tramite"); let esE = dStr === "exonerado" || tc.includes("exonerado");
     let vMat = !isNaN(dNum) && dNum < 0; let aTemp = !isNaN(dNum) && dNum >= 0 && dNum <= 120;
-    
     let estado = 'VIGENTE', accion = 'Monitorear';
-    if (esC) { estado = 'CULMINADO'; accion = 'Archivar'; }
-    else if (esE) { estado = 'LEY31955'; accion = 'Archivar'; } 
-    else if (vMat && !esT) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } 
-    else if (vMat && esT) { estado = 'CRITICO_EN_TRAMITE'; accion = 'Insistir Entidad'; } 
-    else if (aTemp && !esT) { estado = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } 
-    else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } 
-    else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; }
-    else if (isNaN(dNum) && !esC && !esT && !esE) { estado = 'INDEFINIDO'; accion = 'Regularizar'; }
-    
+    if (esC) { estado = 'CULMINADO'; accion = 'Archivar'; } else if (esE) { estado = 'LEY31955'; accion = 'Archivar'; } else if (vMat && !esT) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } else if (vMat && esT) { estado = 'CRITICO_EN_TRAMITE'; accion = 'Insistir Entidad'; } else if (aTemp && !esT) { estado = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } else if (isNaN(dNum) && !esC && !esT && !esE) { estado = 'INDEFINIDO'; accion = 'Regularizar'; }
     return { diasValor: isNaN(dNum) ? null : dNum, esTramite: esT, estadoRiesgo: estado, accion: accion };
 }
 
@@ -285,72 +272,32 @@ function aplicarFiltros() {
     grupoMarcadores.clearLayers(); let boundsCount = 0;
     marcadoresGuardados.forEach(obj => {
         let m = true;
-        if (filtroActualEstado === "Criticos") m = (obj.severidadGlobal === 'CRITICO_SIN_ACCION');
-        else if (filtroActualEstado === "Tramite") m = (obj.evalObra.esTramite || obj.evalDesvio.esTramite);
-        else if (filtroActualEstado === "Menor4Meses") m = (obj.severidadGlobal === 'ALERTA_TEMPRANA');
-        else if (filtroActualEstado === "Ley31955") m = (obj.severidadGlobal === 'LEY31955');
-        else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
+        if (filtroActualEstado === "Criticos") m = (obj.severidadGlobal === 'CRITICO_SIN_ACCION'); else if (filtroActualEstado === "Tramite") m = (obj.evalObra.esTramite || obj.evalDesvio.esTramite); else if (filtroActualEstado === "Menor4Meses") m = (obj.severidadGlobal === 'ALERTA_TEMPRANA'); else if (filtroActualEstado === "Ley31955") m = (obj.severidadGlobal === 'LEY31955'); else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
         if (m) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
     });
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
 }
 
 function renderizarTablasCompletas(data, tableId) {
-    const tbody = document.getElementById(tableId);
-    if (!tbody) return;
-    
+    const tbody = document.getElementById(tableId); if (!tbody) return;
     const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 4, 'VIGENTE': 5, 'INDEFINIDO': 6, 'LEY31955': 7, 'CULMINADO': 8 };
     data.sort((a, b) => (jerarquia[a.estado] || 99) - (jerarquia[b.estado] || 99) || (a.dias || 0) - (b.dias || 0));
-
     tbody.innerHTML = '';
     data.forEach(fila => {
-        let etiquetaHTML = "";
-        let colorFila = "bg-white/60";
+        let etiquetaHTML = "", colorFila = "bg-white/60";
+        if (fila.estado === 'CRITICO_SIN_ACCION') { etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-red-500 text-white">- ${Math.abs(fila.dias)}d (Vencido)</span>`; colorFila = "bg-red-100/70"; }
+        else if (fila.estado === 'CRITICO_EN_TRAMITE') { etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`; colorFila = "bg-fuchsia-100/70"; }
+        else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
+            let fechaVence = new Date(); fechaVence.setDate(fechaVence.getDate() + (fila.dias || 0));
+            etiquetaHTML = `<div class="flex flex-col w-full items-center"><span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span><span class="text-[0.55rem] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Vence: ${fechaVence.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></div>`;
+        } else if (fila.estado === 'LEY31955') etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-orange-500 text-white">Ley 31955</span>`;
+        else if (fila.estado === 'CULMINADO') etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-emerald-500 text-white">Culminada</span>`;
+        else etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
 
-        if (fila.estado === 'CRITICO_SIN_ACCION') {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-red-500 text-white">- ${Math.abs(fila.dias)}d (Vencido)</span>`;
-            colorFila = "bg-red-100/70";
-        } else if (fila.estado === 'CRITICO_EN_TRAMITE') {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`;
-            colorFila = "bg-fuchsia-100/70";
-        } else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
-            let fechaVence = new Date();
-            fechaVence.setDate(fechaVence.getDate() + (fila.dias || 0));
-            let fechaStr = fechaVence.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            
-            etiquetaHTML = `<div class="flex flex-col w-full items-center">
-                <span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span>
-                <span class="text-[0.55rem] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Vence: ${fechaStr}</span>
-            </div>`;
-        } else if (fila.estado === 'LEY31955') {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-orange-500 text-white">Ley 31955</span>`;
-        } else if (fila.estado === 'CULMINADO') {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-emerald-500 text-white">Culminada</span>`;
-        } else {
-            etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
-        }
-
-        let tr = document.createElement('tr');
-        tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
-        tr.innerHTML = `
-            <td class="p-2 font-bold text-slate-800 whitespace-nowrap">${fila.id}</td>
-            <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td>
-            <td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>
-        `;
-
-        tr.addEventListener('mouseenter', () => {
-            tr.classList.add('fila-resaltada');
-            let encontrado = marcadoresGuardados.find(m => m.id === fila.id);
-            if (encontrado) {
-                map.setView([encontrado.lat, encontrado.lon], 15, { animate: true });
-                encontrado.marcador.openPopup();
-            }
-        });
-
-        tr.addEventListener('mouseleave', () => {
-            tr.classList.remove('fila-resaltada');
-        });
-
+        let tr = document.createElement('tr'); tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
+        tr.innerHTML = `<td class="p-2 font-bold text-slate-800 whitespace-nowrap">${fila.id}</td><td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td><td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>`;
+        tr.addEventListener('mouseenter', () => { tr.classList.add('fila-resaltada'); let encontrado = marcadoresGuardados.find(m => m.id === fila.id); if (encontrado) { map.setView([encontrado.lat, encontrado.lon], 15, { animate: true }); encontrado.marcador.openPopup(); }});
+        tr.addEventListener('mouseleave', () => tr.classList.remove('fila-resaltada'));
         tbody.appendChild(tr);
     });
 }
@@ -367,39 +314,22 @@ function configurarBotonTXT() {
 }
 
 function iniciarChatInteligente() {
-    const chat = document.getElementById('panel-chat');
+    const chat = document.getElementById('panel-chat'); const msgContainer = document.getElementById('chat-mensajes'); const inputChat = document.getElementById('chat-input');
     document.getElementById('chat-header').addEventListener('click', () => { chat.classList.toggle('chat-abierta'); chat.classList.toggle('chat-minimizada'); });
-    
-    const msgContainer = document.getElementById('chat-mensajes');
-    const inputChat = document.getElementById('chat-input');
-    const agregarMensaje = (txt, tipo) => {
-        const div = document.createElement('div');
-        div.className = tipo === 'user' ? 'msg-user' : 'msg-bot';
-        div.innerHTML = txt;
-        msgContainer.appendChild(div);
-        msgContainer.scrollTop = msgContainer.scrollHeight;
-    };
-    
+    const agregarMensaje = (txt, tipo) => { const div = document.createElement('div'); div.className = tipo === 'user' ? 'msg-user' : 'msg-bot'; div.innerHTML = txt; msgContainer.appendChild(div); msgContainer.scrollTop = msgContainer.scrollHeight; };
     const enviar = () => {
-        let txt = inputChat.value.trim();
-        if (!txt) return;
-        agregarMensaje(txt, 'user');
-        inputChat.value = '';
+        let txt = inputChat.value.trim(); if (!txt) return; agregarMensaje(txt, 'user'); inputChat.value = '';
         setTimeout(() => {
-            let res = "Consulta genérica.";
-            let nTxt = normalizarTexto(txt);
+            let res = "Consulta genérica."; let nTxt = normalizarTexto(txt);
             if (nTxt.includes('por vencer')) {
                 let l = marcadoresGuardados.filter(o => o.severidadGlobal === 'ALERTA_TEMPRANA').map(o => o.datos.ID);
                 res = l.length > 0 ? `🟡 <b>Por vencer:</b><br>${l.join(', ')}` : `✅ Ninguna por vencer.`;
             } else {
                 let est = marcadoresGuardados.find(o => new RegExp(`\\b${normalizarTexto(o.datos.ID)}\\b`, 'i').test(nTxt));
-                if (est) res = `<b>📍 ${est.datos.ID}</b><br>🚧 <b>Obra:</b> ${formatearTextoPopup(est.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(est.evalDesvio)}`;
-                else res = "Identifica la estructura (Ej: 'PV19').";
+                if (est) res = `<b>📍 ${est.datos.ID}</b><br>🚧 <b>Obra:</b> ${formatearTextoPopup(est.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(est.evalDesvio)}`; else res = "Identifica la estructura (Ej: 'PV19').";
             }
             agregarMensaje(res, 'bot');
         }, 400); 
     };
-
-    document.getElementById('btn-enviar-chat').addEventListener('click', enviar);
-    inputChat.addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
+    document.getElementById('btn-enviar-chat').addEventListener('click', enviar); inputChat.addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
 }
