@@ -4,7 +4,6 @@ const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYN
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const extraerNumeroDias = (val) => { if (val === null || val === undefined) return null; let match = String(val).trim().match(/-?\d+/); return match ? parseInt(match[0]) : null; };
 
-// BASE DE DATOS: PATRIMONIO HISTÓRICO (MIN. CULTURA)
 const dataMinCultura = {
     "E13": [
         { fase: "Primera Fase", res: "RDN° 000116-2023-DGPC/MC", fecha: "09/06/2023" },
@@ -20,29 +19,47 @@ const dataMinCultura = {
     ]
 };
 
+const dataProvias = [
+    { id: "PV4 01BIS", res: "RSD N° 3540-2023-MTC-20.13.2", fecha: "02/03/2023" },
+    { id: "PV4 01BIS", res: "RSD N° 3542-2023-MTC-20.13.2", fecha: "03/03/2023" },
+    { id: "PV4-01", res: "RSD N° 14248-2023-MTC/20.13.2", fecha: "13/09/2023" },
+    { id: "PV4-02", res: "RSD N° 15164-2023-MTC/20.13.2", fecha: "27/09/2023" },
+    { id: "PV4-03", res: "RSD N° 15390-2023-MTC/20.13.2", fecha: "28/09/2023" },
+    { id: "PV4-04", res: "RSD N° 17470-2024-MTC/20.13.2", fecha: "22/10/2024" },
+    { id: "PV4-05", res: "RSD N° 13370 -2024-MTC/20.13.2", fecha: "23/08/2024" },
+    { id: "PV4-06", res: "RSD N° 19468-2024-MTC/20.13.2", fecha: "21/11/2024" },
+    { id: "E4-01", res: "RSD N° 12571 -2023-MTC/20.13.2", fecha: "17/08/2023" },
+    { id: "E4-02", res: "RSD N° 14860-2023-MTC/20.13.2", fecha: "22/09/2023" },
+    { id: "E4-03", res: "RSD N° 14675-2023-MTC/20.13.2", fecha: "19/09/2023" },
+    { id: "E4-04", res: "RSD N° 6975-2024-MTC-20.13.2", fecha: "10/05/2024" },
+    { id: "E4-05", res: "RSD N° 6630-2024-MTC/20,13,2", fecha: "03/05/2024" },
+    { id: "E4-06", res: "RSD N° 6631-2024-MTC/20,13,2", fecha: "03/05/2024" }
+];
+
 window.addEventListener('DOMContentLoaded', () => {
     let fecha = new Date();
     document.getElementById('dash-fecha').innerText = fecha.toLocaleDateString('es-PE');
     document.getElementById('dash-hora').innerText = fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
-    // POBLAR TABLA PATRIMONIO HISTÓRICO
-    const poblarTablaPatrimonio = () => {
-        const tb = document.querySelector('#tb-patrimonio tbody');
-        if (!tb) return;
-        let html = '';
-        for (const [id, fases] of Object.entries(dataMinCultura)) {
-            fases.forEach((f, index) => {
-                html += `<tr class="border-b border-indigo-50">
-                    <td class="text-slate-800 text-[11px] bg-indigo-50/30">${index === 0 ? `<b>\${id}</b>` : ''}</td>
-                    <td class="text-indigo-700 font-bold bg-indigo-50/30">${f.fase}</td>
-                    <td class="text-slate-600 text-[9px] bg-indigo-50/30 break-all leading-tight">${f.res}</td>
-                    <td class="text-slate-500 font-bold bg-indigo-50/30">${f.fecha}</td>
-                </tr>`;
-            });
+    const poblarTablasInstitucionales = () => {
+        const tbMincul = document.querySelector('#tb-patrimonio tbody');
+        if (tbMincul) {
+            let htmlM = '';
+            for (const [id, fases] of Object.entries(dataMinCultura)) {
+                fases.forEach((f, index) => {
+                    htmlM += `<tr class="border-b border-indigo-50"><td class="text-slate-800 text-[10px] bg-indigo-50/30">${index === 0 ? `<b>\${id}</b>` : ''}</td><td class="text-indigo-700 font-bold bg-indigo-50/30">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-indigo-50/30 break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-indigo-50/30">${f.fecha}</td></tr>`;
+                });
+            }
+            tbMincul.innerHTML = htmlM;
         }
-        tb.innerHTML = html;
+
+        const tbProvias = document.querySelector('#tb-provias tbody');
+        if (tbProvias) {
+            let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[10px] bg-sky-50/30 font-bold">${p.id}</td><td class="text-sky-800 text-[8.5px] bg-sky-50/30 break-all leading-tight">${p.res}</td><td class="text-slate-500 font-bold bg-sky-50/30">${p.fecha}</td></tr>`).join('');
+            tbProvias.innerHTML = htmlP;
+        }
     };
-    poblarTablaPatrimonio();
+    poblarTablasInstitucionales();
 
     Papa.parse(urlCSV, {
         download: true, header: true,
