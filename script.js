@@ -273,6 +273,8 @@ function aplicarFiltros() {
     marcadoresGuardados.forEach(obj => {
         let m = true;
         if (filtroActualEstado === "Criticos") m = (obj.severidadGlobal === 'CRITICO_SIN_ACCION'); else if (filtroActualEstado === "Tramite") m = (obj.evalObra.esTramite || obj.evalDesvio.esTramite); else if (filtroActualEstado === "Menor4Meses") m = (obj.severidadGlobal === 'ALERTA_TEMPRANA'); else if (filtroActualEstado === "Ley31955") m = (obj.severidadGlobal === 'LEY31955'); else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
+        else if (filtroActualEstado === "Mincul") m = !!dataMinCultura[obj.id]; 
+
         if (m) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
     });
     if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
@@ -295,7 +297,7 @@ function renderizarTablasCompletas(data, tableId) {
         else etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
 
         let tr = document.createElement('tr'); tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
-        tr.innerHTML = `<td class="p-2 font-bold text-slate-800 whitespace-nowrap">${fila.id}</td><td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all">${fila.resolucion || 'S/N'}</td><td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>`;
+        tr.innerHTML = `<td class="p-2 font-bold text-slate-800 whitespace-nowrap celda-divisoria">${fila.id}</td><td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all celda-divisoria">${fila.resolucion || 'S/N'}</td><td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>`;
         tr.addEventListener('mouseenter', () => { tr.classList.add('fila-resaltada'); let encontrado = marcadoresGuardados.find(m => m.id === fila.id); if (encontrado) { map.setView([encontrado.lat, encontrado.lon], 15, { animate: true }); encontrado.marcador.openPopup(); }});
         tr.addEventListener('mouseleave', () => tr.classList.remove('fila-resaltada'));
         tbody.appendChild(tr);
