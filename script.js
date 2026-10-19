@@ -279,7 +279,7 @@ function aplicarFiltros() {
         else if (filtroActualEstado === "Menor4Meses") m = (obj.severidadGlobal === 'ALERTA_TEMPRANA'); 
         else if (filtroActualEstado === "Ley31955") m = (obj.severidadGlobal === 'LEY31955'); 
         else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
-        else if (filtroActualEstado === "Mincul") m = !!dataMinCultura[obj.id]; // Filtro exclusivo MINCUL
+        else if (filtroActualEstado === "Mincul") m = !!dataMinCultura[obj.id]; 
 
         if (m) { 
             obj.marcador.addTo(grupoMarcadores); 
@@ -310,7 +310,6 @@ function renderizarTablasCompletas(data, tableId) {
         let tr = document.createElement('tr'); 
         tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
         
-        // Se añade la clase 'celda-divisoria' a las primeras dos columnas
         tr.innerHTML = `
             <td class="p-2 font-bold text-slate-800 whitespace-nowrap celda-divisoria">${fila.id}</td>
             <td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all celda-divisoria">${fila.resolucion || 'S/N'}</td>
