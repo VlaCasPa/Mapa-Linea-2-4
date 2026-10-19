@@ -4,7 +4,6 @@ const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYN
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const extraerNumeroDias = (val) => { if (val === null || val === undefined) return null; let match = String(val).trim().match(/-?\d+/); return match ? parseInt(match[0]) : null; };
 
-// Base de datos de MINCUL
 const dataMinCultura = {
     "E13": [
         { fase: "Primera Fase", res: "RDN° 000116-2023-DGPC/MC", fecha: "09/06/2023" },
@@ -20,7 +19,6 @@ const dataMinCultura = {
     ]
 };
 
-// Base de datos PROVIAS (L4)
 const dataProvias = [
     { id: "PV4 01BIS", res: "RSD N° 3540-2023-MTC-20.13.2", fecha: "02/03/2023" },
     { id: "PV4 01BIS", res: "RSD N° 3542-2023-MTC-20.13.2", fecha: "03/03/2023" },
@@ -161,30 +159,17 @@ window.addEventListener('DOMContentLoaded', () => {
         let ori = btn.innerHTML; 
         btn.innerHTML = "⏳ Procesando PDF...";
         
-        // CORRECCIÓN EXACTA PARA PC Y MÓVIL
-        // Forzamos al body y al lienzo a alinearse estrictamente a la izquierda superior (0,0) solo durante la captura
-        document.body.style.alignItems = "flex-start";
+        window.scrollTo(0, 0);
         const lienzo = document.getElementById('lienzo-pdf');
         
-        lienzo.classList.add('modo-impresion');
-        lienzo.style.margin = "0"; // Quita el centrado
-        
-        // El scroll se mueve arriba a la izquierda para evitar cortes
-        window.scrollTo(0, 0);
-
         html2pdf().set({ 
             margin: 0, 
             filename: `Informe_Estrategico_L2L4_${new Date().getTime()}.pdf`, 
             image: { type: 'jpeg', quality: 1.0 }, 
+            // windowWidth ancla el lienzo a los 794px exactos del A4 sin importar el tamaño del monitor
             html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794 }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         }).from(lienzo).save().then(() => { 
-            
-            // Revertimos todos los estilos para que la pantalla web vuelva a verse centrada
-            document.body.style.alignItems = ""; 
-            lienzo.classList.remove('modo-impresion');
-            lienzo.style.margin = ""; 
-            
             btn.innerHTML = "✅ Informe Descargado"; 
             setTimeout(() => btn.innerHTML = ori, 3000); 
         });
