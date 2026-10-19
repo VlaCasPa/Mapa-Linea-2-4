@@ -47,7 +47,21 @@ window.addEventListener('DOMContentLoaded', () => {
             let htmlM = '';
             for (const [id, fases] of Object.entries(dataMinCultura)) {
                 fases.forEach((f, index) => {
-                    htmlM += `<tr class="border-b border-indigo-50"><td class="text-slate-800 text-[10px] bg-indigo-50/30">${index === 0 ? `<b>\${id}</b>` : ''}</td><td class="text-indigo-700 font-bold bg-indigo-50/30">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-indigo-50/30 break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-indigo-50/30">${f.fecha}</td></tr>`;
+                    // Diseño Mincul con Celdas Combinadas (rowspan) para el ID
+                    if(index === 0) {
+                        htmlM += `<tr class="border-b border-indigo-100">
+                            <td rowspan="${fases.length}" class="text-slate-800 text-[10px] bg-indigo-50/50 text-center border-r border-indigo-100 align-middle font-bold">${id}</td>
+                            <td class="text-indigo-700 font-bold bg-white">${f.fase}</td>
+                            <td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td>
+                            <td class="text-slate-500 font-bold bg-white">${f.fecha}</td>
+                        </tr>`;
+                    } else {
+                        htmlM += `<tr class="border-b border-indigo-100">
+                            <td class="text-indigo-700 font-bold bg-white">${f.fase}</td>
+                            <td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td>
+                            <td class="text-slate-500 font-bold bg-white">${f.fecha}</td>
+                        </tr>`;
+                    }
                 });
             }
             tbMincul.innerHTML = htmlM;
@@ -55,7 +69,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
         const tbProvias = document.querySelector('#tb-provias tbody');
         if (tbProvias) {
-            let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[9px] bg-sky-50/30 font-bold">${p.id}</td><td class="text-sky-800 text-[8px] bg-sky-50/30 break-all leading-tight">${p.res}</td><td class="text-slate-500 text-[8.5px] font-bold bg-sky-50/30">${p.fecha}</td></tr>`).join('');
+            // Diseño Provias con reducción de altura (py-0.5)
+            let htmlP = dataProvias.map(p => `<tr class="border-b border-sky-50"><td class="text-slate-800 text-[9px] bg-sky-50/30 font-bold py-0.5">${p.id}</td><td class="text-sky-800 text-[8px] bg-sky-50/30 break-all leading-tight py-0.5">${p.res}</td><td class="text-slate-500 text-[8.5px] font-bold bg-sky-50/30 py-0.5">${p.fecha}</td></tr>`).join('');
             tbProvias.innerHTML = htmlP;
         }
     };
