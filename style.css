@@ -52,7 +52,7 @@ body, html {
 
 /* --- MEJORAS UI/UX: TABLAS LEAN CONSTRUCTION --- */
 .celda-divisoria {
-    border-right: 1px solid rgba(203, 213, 225, 0.4); /* Línea tenue vertical */
+    border-right: 1px solid rgba(203, 213, 225, 0.4); 
 }
 
 .fila-resaltada {
