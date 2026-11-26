@@ -120,7 +120,7 @@ window.aceptarDisclaimer = async function() {
 
 let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
 window.dataObrasGlobal = []; window.dataDesviosGlobal = [];
-const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?output=csv";
+const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?gid=718015500&single=true&output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
 const dataMinCultura = {
@@ -326,4 +326,123 @@ function evaluarRiesgo(dias, comentarios) {
     let esC = dStr === "culminado" || tc.includes("culminado"); let esT = dStr === "en tramite" || tc.includes("tramite"); let esE = dStr === "exonerado" || tc.includes("exonerado");
     let vMat = !isNaN(dNum) && dNum < 0; let aTemp = !isNaN(dNum) && dNum >= 0 && dNum <= 120;
     let estado = 'VIGENTE', accion = 'Monitorear';
-    if (esC) { estado = 'CULMINADO'; accion = 'Arch
+    if (esC) { estado = 'CULMINADO'; accion = 'Archivar'; } else if (esE) { estado = 'LEY31955'; accion = 'Archivar'; } else if (vMat && !esT) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } else if (vMat && esT) { estado = 'CRITICO_EN_TRAMITE'; accion = 'Insistir Entidad'; } else if (aTemp && !esT) { estado = 'ALERTA_TEMPRANA'; accion = 'Preparar Exp.'; } else if (esT) { estado = 'TRAMITE_EN_PLAZO'; accion = 'Seguimiento'; } else if (!isNaN(dNum) && dNum === 0) { estado = 'CRITICO_SIN_ACCION'; accion = 'Tomar Acción'; } else if (isNaN(dNum) && !esC && !esT && !esE) { estado = 'INDEFINIDO'; accion = 'Regularizar'; }
+    return { diasValor: isNaN(dNum) ? null : dNum, esTramite: esT, estadoRiesgo: estado, accion: accion };
+}
+
+function obtenerClaseCSS(estado) {
+    const mapa = { 'CRITICO_SIN_ACCION': 'estado-critico-sin-accion', 'CRITICO_EN_TRAMITE': 'estado-critico-en-tramite', 'ALERTA_TEMPRANA': 'estado-alerta', 'TRAMITE_EN_PLAZO': 'estado-tramite-plazo', 'LEY31955': 'estado-exonerado', 'CULMINADO': 'estado-culminado', 'INDEFINIDO': 'estado-exonerado' };
+    return mapa[estado] || 'estado-tramite-plazo';
+}
+
+function formatearTextoPopup(ev) {
+    if (ev.estadoRiesgo === 'CULMINADO') return "Finalizada";
+    if (ev.estadoRiesgo === 'LEY31955') return "Ley N° 31955";
+    if (ev.estadoRiesgo === 'INDEFINIDO') return "Indefinido";
+    let textoDias = ev.diasValor !== null ? (ev.diasValor < 0 ? `Vencido (${Math.abs(ev.diasValor)}d)` : `Quedan ${ev.diasValor}d`) : "";
+    if (ev.estadoRiesgo === 'CRITICO_EN_TRAMITE' || ev.estadoRiesgo === 'TRAMITE_EN_PLAZO') return `En Trámite ${textoDias ? '- ' + textoDias : ''}`;
+    return textoDias || ev.diasOriginal || "S/D";
+}
+
+function aplicarEstiloMarcador(marker, estado) {
+    marker.getElement()?.classList.remove('brillo-preventivo', 'brillo-tramite-vencido');
+    if (estado === 'CRITICO_SIN_ACCION') marker.setStyle({ fillColor: "#dc2626", color: "#ffffff" });
+    else if (estado === 'CRITICO_EN_TRAMITE') { marker.setStyle({ fillColor: "#c026d3", color: "#dc2626" }); marker.getElement()?.classList.add('brillo-tramite-vencido'); }
+    else if (estado === 'ALERTA_TEMPRANA') { marker.setStyle({ fillColor: "#f59e0b", color: "#ffffff" }); marker.getElement()?.classList.add('brillo-preventivo'); }
+    else if (estado === 'LEY31955') marker.setStyle({ fillColor: "#f97316", color: "#ffffff" });
+    else marker.setStyle({ fillColor: "#10b981", color: "#ffffff" });
+}
+
+function determinarSeveridadVisual(o, d) {
+    return (PRIORIDAD_SEVERIDAD[o.estadoRiesgo] ?? 0) > (PRIORIDAD_SEVERIDAD[d.estadoRiesgo] ?? 0) ? o.estadoRiesgo : d.estadoRiesgo;
+}
+
+function aplicarFiltros() {
+    grupoMarcadores.clearLayers(); let boundsCount = 0;
+    marcadoresGuardados.forEach(obj => {
+        let m = true;
+        if (filtroActualEstado === "Criticos") m = obj.tieneCriticoSinAccion;
+        else if (filtroActualEstado === "Tramite") m = obj.tieneTramite;
+        else if (filtroActualEstado === "Menor4Meses") m = obj.filasEvaluadas.some(f => f.sev === 'ALERTA_TEMPRANA');
+        else if (filtroActualEstado === "Ley31955") m = obj.filasEvaluadas.some(f => f.sev === 'LEY31955');
+        else if (filtroActualEstado === "Culminado") m = (obj.severidadGlobal === 'CULMINADO');
+        else if (filtroActualEstado === "Mincul") m = !!dataMinCultura[obj.id]; 
+        else if (filtroActualEstado === "Provias") m = !!dataProvias[obj.id]; 
+
+        if (m) { obj.marcador.addTo(grupoMarcadores); boundsCount++; }
+    });
+    if (boundsCount > 0) map.fitBounds(grupoMarcadores.getBounds(), { padding: [30, 30], maxZoom: 15 });
+}
+
+function renderizarTablasCompletas(data, tableId) {
+    const tbody = document.getElementById(tableId); if (!tbody) return;
+    const jerarquia = { 'CRITICO_SIN_ACCION': 1, 'CRITICO_EN_TRAMITE': 2, 'ALERTA_TEMPRANA': 3, 'TRAMITE_EN_PLAZO': 4, 'VIGENTE': 5, 'INDEFINIDO': 6, 'LEY31955': 7, 'CULMINADO': 8 };
+    data.sort((a, b) => (jerarquia[a.estado] || 99) - (jerarquia[b.estado] || 99) || (a.dias || 0) - (b.dias || 0));
+    tbody.innerHTML = '';
+    data.forEach(fila => {
+        let etiquetaHTML = "", colorFila = "bg-white/60";
+        if (fila.estado === 'CRITICO_SIN_ACCION') { etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-red-500 text-white">- ${Math.abs(fila.dias)}d (Vencido)</span>`; colorFila = "bg-red-100/70"; }
+        else if (fila.estado === 'CRITICO_EN_TRAMITE') { etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-fuchsia-600 text-white">- ${Math.abs(fila.dias)}d (En Trámite)</span>`; colorFila = "bg-fuchsia-100/70"; }
+        else if (fila.estado === 'ALERTA_TEMPRANA' || fila.estado === 'TRAMITE_EN_PLAZO' || fila.estado === 'VIGENTE') {
+            let fechaVence = new Date(); fechaVence.setDate(fechaVence.getDate() + (fila.dias || 0));
+            etiquetaHTML = `<div class="flex flex-col w-full items-center"><span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-yellow-400 text-slate-800">Quedan ${fila.dias}d</span><span class="text-[0.55rem] font-bold text-slate-500 mt-1 uppercase tracking-tighter">Vence: ${fechaVence.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></div>`;
+        } else if (fila.estado === 'LEY31955') etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-orange-500 text-white">Ley 31955</span>`;
+        else if (fila.estado === 'CULMINADO') etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-emerald-500 text-white">Culminada</span>`;
+        else etiquetaHTML = `<span class="px-2 py-1 rounded shadow-sm font-bold text-[0.65rem] w-full bg-slate-200 text-slate-600">${fila.orig || 'S/D'}</span>`;
+
+        let tr = document.createElement('tr'); tr.className = `border-b border-gray-200/60 transition-colors ${colorFila} cursor-pointer`;
+        tr.innerHTML = `<td class="p-2 font-bold text-slate-800 whitespace-nowrap celda-divisoria">${fila.id}</td><td class="p-2 text-slate-800 font-bold text-[0.65rem] md:text-[0.7rem] leading-tight break-all celda-divisoria">${fila.resolucion || 'S/N'}</td><td class="p-2 text-center flex items-center justify-center">${etiquetaHTML}</td>`;
+        
+        tr.addEventListener('mouseenter', () => { 
+            tr.classList.add('fila-resaltada'); 
+            let encontrado = marcadoresGuardados.find(m => m.id === fila.id); 
+            if (encontrado) { 
+                map.setView([encontrado.lat, encontrado.lon], 15, { animate: true }); 
+                encontrado.marcador.openPopup(); 
+            }
+        });
+        tr.addEventListener('mouseleave', () => tr.classList.remove('fila-resaltada'));
+        tbody.appendChild(tr);
+    });
+}
+
+function configurarBotonTXT() {
+    document.getElementById('btn-reporte-txt').addEventListener('click', (e) => {
+        let t = `📊 *REPORTE PERMISOS - L2/L4*\n📅 ${new Date().toLocaleString('es-PE')}\n\n`;
+        let ob = window.dataObrasGlobal.filter(d => ['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE'].includes(d.estado));
+        let de = window.dataDesviosGlobal.filter(d => ['CRITICO_SIN_ACCION', 'CRITICO_EN_TRAMITE'].includes(d.estado));
+        t += `🚧 *OBRAS CRÍTICAS (${ob.length}):*\n`; ob.forEach(o => t += `- ${o.id}: Vencido ${Math.abs(o.dias)}d.\n`);
+        t += `\n🚦 *DESVÍOS CRÍTICOS (${de.length}):*\n`; de.forEach(d => t += `- ${d.id}: Vencido ${Math.abs(d.dias)}d.\n`);
+        navigator.clipboard.writeText(t).then(() => { let ori = e.target.innerHTML; e.target.innerHTML = "✅ Copiado"; setTimeout(() => e.target.innerHTML = ori, 2000); });
+    });
+}
+
+function iniciarChatInteligente() {
+    const chat = document.getElementById('panel-chat'); const msgContainer = document.getElementById('chat-mensajes'); const inputChat = document.getElementById('chat-input');
+    document.getElementById('chat-header').addEventListener('click', () => { chat.classList.toggle('chat-abierta'); chat.classList.toggle('chat-minimizada'); });
+    const agregarMensaje = (txt, tipo) => { const div = document.createElement('div'); div.className = tipo === 'user' ? 'msg-user' : 'msg-bot'; div.innerHTML = txt; msgContainer.appendChild(div); msgContainer.scrollTop = msgContainer.scrollHeight; };
+    const enviar = () => {
+        let txt = inputChat.value.trim(); if (!txt) return; agregarMensaje(txt, 'user'); inputChat.value = '';
+        setTimeout(() => {
+            let res = "Consulta genérica."; let nTxt = normalizarTexto(txt);
+            if (nTxt.includes('por vencer')) {
+                let l = marcadoresGuardados.filter(o => o.filasEvaluadas.some(f => f.sev === 'ALERTA_TEMPRANA')).map(o => o.id);
+                res = l.length > 0 ? `🟡 <b>Por vencer:</b><br>${l.join(', ')}` : `✅ Ninguna por vencer.`;
+            } else {
+                let est = marcadoresGuardados.find(o => new RegExp(`\\b${normalizarTexto(o.id)}\\b`, 'i').test(nTxt));
+                if (est) {
+                    if (est.filasEvaluadas.length === 1) {
+                        let f = est.filasEvaluadas[0];
+                        res = `<b>📍 ${est.id}</b><br>🚧 <b>Obra:</b> ${formatearTextoPopup(f.evalObra)}<br>🚦 <b>Tránsito:</b> ${formatearTextoPopup(f.evalDesvio)}`;
+                    } else {
+                        res = `<b>📍 ${est.id} (${est.filasEvaluadas.length} expedientes)</b><br>` + est.filasEvaluadas.map((f, i) =>
+                            `<b>Exp. ${i + 1}:</b> 🚧 ${formatearTextoPopup(f.evalObra)} | 🚦 ${formatearTextoPopup(f.evalDesvio)}`
+                        ).join('<br>');
+                    }
+                } else res = "Identifica la estructura (Ej: 'PV19').";
+            }
+            agregarMensaje(res, 'bot');
+        }, 400); 
+    };
+    document.getElementById('btn-enviar-chat').addEventListener('click', enviar); inputChat.addEventListener('keypress', (e) => { if(e.key === 'Enter') enviar(); });
+}
