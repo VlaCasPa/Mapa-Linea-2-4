@@ -120,7 +120,7 @@ window.aceptarDisclaimer = async function() {
 
 let map, grupoMarcadores, marcadoresGuardados = [], filtroActualEstado = "Todos";
 window.dataObrasGlobal = []; window.dataDesviosGlobal = [];
-const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?gid=718015500&single=true&output=csv";
+const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
 const dataMinCultura = {
