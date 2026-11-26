@@ -1,6 +1,6 @@
 Chart.register(window.ChartDataLabels);
 
-const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?output=csv";
+const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?gid=718015500&single=true&output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const extraerNumeroDias = (val) => { if (val === null || val === undefined) return null; let match = String(val).trim().match(/-?\d+/); return match ? parseInt(match[0]) : null; };
 
@@ -174,4 +174,3 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
-```[cite: 4]
