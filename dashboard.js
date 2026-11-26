@@ -1,6 +1,6 @@
 Chart.register(window.ChartDataLabels);
 
-const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSz_DsP2CT07FaYNRe4MIX7cO25I01gUb9e_aboGNrIHyBzHiVCX-Ea800l6R76rQ/pub?output=csv";
+const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRq0plDLd9ROpcnA1ISpEmYlVGguEqYw9L-vUVtiQ0-hsVl_VAq4wxz0x2wURCgFQ/pub?output=csv";
 const normalizarTexto = (str) => str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 const extraerNumeroDias = (val) => { if (val === null || val === undefined) return null; let match = String(val).trim().match(/-?\d+/); return match ? parseInt(match[0]) : null; };
 
@@ -47,7 +47,7 @@ window.addEventListener('DOMContentLoaded', () => {
             let htmlM = '';
             for (const [id, fases] of Object.entries(dataMinCultura)) {
                 fases.forEach((f, index) => {
-                    if(index === 0) {
+                    if (index === 0) {
                         htmlM += `<tr class="border-b border-indigo-100"><td rowspan="${fases.length}" class="text-slate-800 text-[10px] bg-indigo-50/50 text-center border-r border-indigo-100 align-middle font-bold">${id}</td><td class="text-indigo-700 font-bold bg-white">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-white">${f.fecha}</td></tr>`;
                     } else {
                         htmlM += `<tr class="border-b border-indigo-100"><td class="text-indigo-700 font-bold bg-white">${f.fase}</td><td class="text-slate-600 text-[8.5px] bg-white break-all leading-tight">${f.res}</td><td class="text-slate-500 font-bold bg-white">${f.fecha}</td></tr>`;
@@ -118,7 +118,7 @@ window.addEventListener('DOMContentLoaded', () => {
             new Chart(document.getElementById('chart-jurisdiccion'), {
                 type: 'bar',
                 data: { labels: ['Obras', 'Desvíos'], datasets: [ { label: 'Lima', data: [jur.obraLima, jur.desvioLima], backgroundColor: '#3b82f6', borderRadius: 2 }, { label: 'Callao', data: [jur.obraCallao, jur.desvioCallao], backgroundColor: '#f59e0b', borderRadius: 2 } ] },
-                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: {size: 8} } }, datalabels: { display: true, color: 'white', font: { weight: 'bold', size: 8 }, formatter: (value, ctx) => { let totalFila = ctx.chart.data.datasets[0].data[ctx.dataIndex] + ctx.chart.data.datasets[1].data[ctx.dataIndex]; return (totalFila > 0 && value > 0) ? Math.round((value / totalFila) * 100) + '%' : ''; } } }, scales: { x: { stacked: true, display: false }, y: { stacked: true, ticks: { font: { size: 9, weight: 'bold' } } } } }
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 8, font: { size: 8 } } }, datalabels: { display: true, color: 'white', font: { weight: 'bold', size: 8 }, formatter: (value, ctx) => { let totalFila = ctx.chart.data.datasets[0].data[ctx.dataIndex] + ctx.chart.data.datasets[1].data[ctx.dataIndex]; return (totalFila > 0 && value > 0) ? Math.round((value / totalFila) * 100) + '%' : ''; } } }, scales: { x: { stacked: true, display: false }, y: { stacked: true, ticks: { font: { size: 9, weight: 'bold' } } } } }
             });
 
             new Chart(document.getElementById('chart-lookahead'), {
@@ -145,7 +145,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const tb = document.querySelector(`#${idTbody} tbody`);
                 data.sort((a, b) => a.dias - b.dias).slice(0, 5).forEach(d => { 
                     let cont = isUrgente ? `<span class="bg-red-100 px-2 py-0.5 rounded text-red-700 font-bold text-[9px]">-Vencido ${Math.abs(d.dias)}d</span>` : `<span class="text-[10px] font-black text-fuchsia-700">- ${Math.abs(d.dias)} días</span>`;
-                    let fila = `<tr><td class="text-slate-800">${d.id}</td>${isUrgente ? `<td class="text-slate-500">\${d.tipo}</td>` : ''}<td class="text-slate-500 truncate max-w-[150px]">${d.res || 'S/N'}</td><td class="text-right">${cont}</td></tr>`;
+                    let fila = `<tr><td class="text-slate-800">${d.id}</td>${isUrgente ? `<td class="text-slate-500">${d.tipo}</td>` : ''}<td class="text-slate-500 truncate max-w-[150px]">${d.res || 'S/N'}</td><td class="text-right">${cont}</td></tr>`;
                     tb.innerHTML += fila;
                 });
             };
@@ -166,7 +166,6 @@ window.addEventListener('DOMContentLoaded', () => {
             margin: 0, 
             filename: `Informe_Estrategico_L2L4_${new Date().getTime()}.pdf`, 
             image: { type: 'jpeg', quality: 1.0 }, 
-            // windowWidth ancla el lienzo a los 794px exactos del A4 sin importar el tamaño del monitor
             html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowWidth: 794 }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         }).from(lienzo).save().then(() => { 
@@ -175,3 +174,4 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+```[cite: 4]
